@@ -71,6 +71,45 @@ php -S localhost:8080
 2. Right-click on `index.html`
 3. Select "Open with Live Server"
 
+### Option E: Node.js with Built-in CORS Proxy (Recommended for CORS Issues)
+
+**⭐ NEW: Best option if you're experiencing CORS errors or firewall issues!**
+
+This option includes a built-in proxy server that solves CORS problems automatically:
+
+```bash
+# Navigate to the project directory
+cd /path/to/Lorebook-Gathering-Point
+
+# Install dependencies (one-time setup)
+npm install
+
+# Start the server with proxy
+npm start
+```
+
+You should see:
+```
+╔═══════════════════════════════════════════════════════════════╗
+║  Lorebook Generator CORS Proxy Server                        ║
+╚═══════════════════════════════════════════════════════════════╝
+
+✓ Server running at: http://localhost:3000
+✓ Web interface:     http://localhost:3000
+✓ Proxy endpoint:    http://localhost:3000/proxy/<target-url>
+```
+
+**Benefits:**
+- ✅ Automatically handles CORS issues
+- ✅ Bypasses browser extension blocking
+- ✅ Works around firewall restrictions
+- ✅ No additional API server configuration needed
+
+**How to use:**
+1. Open `http://localhost:3000` in your browser
+2. Configure your API normally - the proxy handles everything automatically
+3. Or use the proxy URL format: `http://localhost:3000/proxy/https://api.openai.com/v1`
+
 ## Step 3: Open in Browser
 
 Open your web browser and navigate to:
@@ -107,7 +146,32 @@ http://localhost:8080
   - Press **F12** to open browser console and check for `ERR_BLOCKED_BY_CLIENT` errors
   - SillyTavern uses a backend proxy which avoids browser CORS restrictions
   - Browser-based tools like this have stricter security constraints
+  - **⭐ SOLUTION**: Use the built-in proxy server (Option E above) to bypass these issues!
 - Some proxy services only support server-to-server requests, not direct browser access
+  - **⭐ SOLUTION**: Use the built-in proxy server (Option E above) to route requests through the backend!
+
+### Using the Built-in Proxy Server (for CORS/Firewall Issues)
+
+If you're using **Option E** (Node.js with CORS Proxy), you have two ways to use it:
+
+**Method 1: Transparent Proxy (Simplest)**
+1. Start the proxy server: `npm start`
+2. Open `http://localhost:3000` in your browser
+3. Configure your API endpoint URL normally (e.g., `https://api.openai.com/v1`)
+4. The proxy automatically handles CORS - no special configuration needed!
+
+**Method 2: Explicit Proxy URL**
+1. Start the proxy server: `npm start`
+2. Open `http://localhost:3000` in your browser
+3. **API Base URL**: `http://localhost:3000/proxy/https://api.openai.com/v1`
+4. **API Key**: Your normal API key
+5. **Model Name**: Your model name
+
+The proxy server will:
+- ✅ Forward all requests to your actual API
+- ✅ Handle CORS headers automatically
+- ✅ Bypass browser extension blocking
+- ✅ Work around firewall restrictions
 
 ### For LM Studio (Local)
 

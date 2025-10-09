@@ -8,7 +8,7 @@ Get started with the Lorebook Generator in 5 minutes!
 
 ### Recommended Setup (Choose one method):
 
-**Option 1: Using Python (Recommended)**
+**Option 1: Using Python (Simple)**
 ```bash
 # Navigate to the project directory
 cd /path/to/Lorebook-Gathering-Point
@@ -41,7 +41,28 @@ cd /path/to/Lorebook-Gathering-Point
 php -S localhost:8080
 ```
 
-**Then navigate to `http://localhost:8080` in your web browser.**
+**Option 4: Using Node.js with Built-in CORS Proxy (⭐ BEST for CORS/Firewall Issues!)**
+```bash
+# Navigate to the project directory
+cd /path/to/Lorebook-Gathering-Point
+
+# Install dependencies (one-time setup)
+npm install
+
+# Start the server with proxy
+npm start
+```
+
+**Then navigate to:**
+- `http://localhost:8080` for Options 1-3
+- `http://localhost:3000` for Option 4 (proxy server)
+
+**⭐ Why use the Proxy Server (Option 4)?**
+- ✅ Automatically handles ALL CORS issues
+- ✅ Bypasses browser extension blocking
+- ✅ Works around firewall restrictions
+- ✅ No API server configuration needed
+- ✅ Perfect if your setup works in SillyTavern but not in browsers
 
 ### Why is this necessary?
 

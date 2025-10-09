@@ -1,0 +1,23 @@
+{
+  "name": "lorebook-gathering-point",
+  "version": "1.0.0",
+  "description": "Lorebook Generator for SillyTavern with optional CORS proxy",
+  "main": "proxy-server.js",
+  "scripts": {
+    "start": "node proxy-server.js",
+    "proxy": "node proxy-server.js"
+  },
+  "keywords": [
+    "lorebook",
+    "sillytavern",
+    "ai",
+    "proxy"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "node-fetch": "^2.7.0"
+  }
+}
