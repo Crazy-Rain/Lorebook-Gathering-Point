@@ -105,12 +105,46 @@ The generated lorebooks are fully compatible with SillyTavern and include:
 ## Troubleshooting
 
 ### API Connection Issues
-- Verify your API URL includes the `/v1` path
-- Check that your API key is valid
-- Ensure CORS is enabled on local API endpoints
-- For network errors, the app will provide detailed troubleshooting steps
-- If you see "NetworkError", verify your server is running and accessible
-- For local APIs, you may need to configure CORS headers
+
+**"Connection Error" or "NetworkError":**
+- **Most Common Issue**: If opening `index.html` directly (file:// in browser), CORS will block API requests
+  - **Solution**: Serve the tool via a web server:
+    ```bash
+    # Python
+    python3 -m http.server 8080
+    
+    # Node.js
+    npx serve
+    
+    # PHP
+    php -S localhost:8080
+    ```
+  - Then access via `http://localhost:8080`
+
+- **For Local APIs** (LM Studio, Oobabooga, Text Generation WebUI, etc.):
+  - Enable CORS on your API server (see your server's documentation)
+  - Verify the server is running and accessible
+  - Check that the API URL ends with `/v1` (e.g., `http://localhost:5000/v1`)
+
+- **Works in SillyTavern but not here?**
+  - Check that you're accessing this tool via http:// not file://
+  - Verify CORS is configured to allow this origin on your API server
+  - Some API servers allow specific origins - you may need to add localhost
+
+**Authentication Errors (401/403):**
+- Verify your API key is correct and has proper permissions
+- For local APIs, some don't require API keys - try any placeholder text
+
+**404 Errors:**
+- Check API URL is correct (should typically end with `/v1`)
+- Verify the server supports OpenAI-compatible API format
+- Try removing or adding `/v1` to your URL
+
+**400 Bad Request:**
+- Connection is working! The issue is likely:
+  - Invalid or unsupported model name
+  - Try clicking "Refresh Models" to see available models
+  - Or manually enter your model name
 
 ### Generation Issues
 - Make sure source text is provided
