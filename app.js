@@ -308,39 +308,30 @@ async function generateEntries() {
         const content = data.choices[0].message.content;
         
         // Try to extract JSON from the response
-        let entries;
+        let jsonContent;
         try {
             // Try direct parsing first
-            entries = JSON.parse(content);
+            JSON.parse(content);
+            jsonContent = content;
         } catch (e) {
             // Try to extract JSON from markdown code blocks or text
             const jsonMatch = content.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/) || 
                             content.match(/(\[[\s\S]*\])/);
             if (jsonMatch) {
-                entries = JSON.parse(jsonMatch[1]);
+                jsonContent = jsonMatch[1];
             } else {
                 throw new Error('Could not parse JSON from API response. Please check the processing instructions or try again.');
             }
         }
 
-        if (!Array.isArray(entries)) {
-            throw new Error('API response is not an array of entries');
-        }
-
-        // Add entries to the lorebook
-        let addedCount = 0;
-        entries.forEach(entry => {
-            if (entry.keys && entry.content) {
-                const keys = Array.isArray(entry.keys) ? entry.keys : [entry.keys];
-                addEntry(keys, entry.content);
-                addedCount++;
-            }
-        });
-
-        showStatus(`✅ Successfully generated and added ${addedCount} lorebook entries!`, 'success');
+        // Display the AI response in the review text box
+        document.getElementById('aiResponse').value = jsonContent;
+        document.getElementById('aiResponseSection').style.display = 'block';
         
-        // Clear source text after successful generation
-        document.getElementById('sourceText').value = '';
+        showStatus('✅ AI response received! Review the content below and click "Convert to Lorebook Entries" when ready.', 'success');
+        
+        // Scroll to the AI response section
+        document.getElementById('aiResponseSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
         
     } catch (error) {
         // Better error handling for network and API errors
@@ -373,6 +364,61 @@ async function generateEntries() {
     } finally {
         setLoading(false);
     }
+}
+
+// Convert AI response to lorebook entries
+function convertToEntries() {
+    const aiResponse = document.getElementById('aiResponse').value.trim();
+    
+    if (!aiResponse) {
+        showStatus('No AI response to convert. Generate entries with AI first.', 'error');
+        return;
+    }
+    
+    try {
+        // Parse the JSON response
+        const entries = JSON.parse(aiResponse);
+        
+        if (!Array.isArray(entries)) {
+            throw new Error('Response is not an array of entries');
+        }
+        
+        // Add entries to the lorebook
+        let addedCount = 0;
+        entries.forEach(entry => {
+            if (entry.keys && entry.content) {
+                const keys = Array.isArray(entry.keys) ? entry.keys : [entry.keys];
+                addEntry(keys, entry.content);
+                addedCount++;
+            }
+        });
+        
+        if (addedCount === 0) {
+            showStatus('No valid entries found in the response. Each entry needs "keys" and "content" fields.', 'error');
+            return;
+        }
+        
+        showStatus(`✅ Successfully added ${addedCount} lorebook entries!`, 'success');
+        
+        // Clear the AI response and hide the section
+        clearAiResponse();
+        
+        // Clear source text
+        document.getElementById('sourceText').value = '';
+        
+        // Scroll to entries section
+        document.getElementById('entriesContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        
+    } catch (error) {
+        showStatus(`❌ Failed to parse AI response: ${error.message}. Please ensure the response is valid JSON.`, 'error');
+        console.error('Parse error:', error);
+    }
+}
+
+// Clear AI response
+function clearAiResponse() {
+    document.getElementById('aiResponse').value = '';
+    document.getElementById('aiResponseSection').style.display = 'none';
 }
 
 // Add manual entry

@@ -388,6 +388,20 @@ Source text:</textarea>
                 <button class="btn btn-primary" onclick="generateEntries()">🤖 Generate Entries with AI</button>
             </div>
 
+            <!-- AI Response Review Section -->
+            <div class="section" id="aiResponseSection" style="display: none;">
+                <h2>🔍 Review AI Response</h2>
+                <div class="form-group">
+                    <label for="aiResponse">AI Generated Content (Editable):</label>
+                    <textarea id="aiResponse" placeholder="AI response will appear here. You can review and edit before converting to lorebook entries..."></textarea>
+                    <p class="help-text">Review and modify the AI-generated JSON response as needed. The response should be a JSON array of objects with 'keys' and 'content' fields.</p>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-success" onclick="convertToEntries()">✅ Convert to Lorebook Entries</button>
+                    <button class="btn btn-secondary" onclick="clearAiResponse()">🗑️ Clear Response</button>
+                </div>
+            </div>
+
             <!-- Manual Entry Section -->
             <div class="section">
                 <h2>➕ Add Manual Entry</h2>
