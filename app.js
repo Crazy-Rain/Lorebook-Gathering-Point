@@ -32,8 +32,30 @@ async function testConnection() {
     }
 
     setLoading(true);
+    console.log('Testing connection to:', apiUrl);
 
     try {
+        // First, try a simple GET request to /models endpoint to check basic connectivity
+        console.log('Step 1: Testing basic connectivity with /models endpoint...');
+        let modelsResponse;
+        try {
+            modelsResponse = await fetch(`${apiUrl}/models`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`
+                }
+            });
+            console.log('Models endpoint response status:', modelsResponse.status);
+        } catch (modelsError) {
+            console.log('Models endpoint failed:', modelsError);
+            // Models endpoint failed, but let's continue to chat/completions as some endpoints don't support /models
+        }
+
+        // If models endpoint worked, great! If not, continue with chat/completions test
+        console.log('Step 2: Testing chat completions endpoint...');
+        
+        // Use a minimal request that should work with most OpenAI-compatible endpoints
+        const testModel = modelName || 'gpt-3.5-turbo'; // Fallback model if none specified
         const response = await fetch(`${apiUrl}/chat/completions`, {
             method: 'POST',
             headers: {
@@ -41,31 +63,63 @@ async function testConnection() {
                 'Authorization': `Bearer ${apiKey}`
             },
             body: JSON.stringify({
-                model: modelName,
+                model: testModel,
                 messages: [
-                    { role: 'user', content: 'Hello! Please respond with "Connection successful" if you receive this message.' }
+                    { role: 'user', content: 'test' }
                 ],
-                max_tokens: 50
+                max_tokens: 5
             })
         });
 
+        console.log('Chat completions response status:', response.status);
+
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(`API Error: ${response.status} - ${errorData.error?.message || response.statusText}`);
+            const errorMsg = errorData.error?.message || response.statusText;
+            
+            // Provide specific guidance based on error type
+            if (response.status === 401 || response.status === 403) {
+                throw new Error(`Authentication failed (${response.status}): ${errorMsg}\n\nPlease check:\n• Your API key is correct\n• The API key has the necessary permissions`);
+            } else if (response.status === 404) {
+                throw new Error(`Endpoint not found (404): ${errorMsg}\n\nPlease check:\n• API URL is correct (should end with /v1 for most providers)\n• The server supports OpenAI-compatible API`);
+            } else if (response.status === 400) {
+                throw new Error(`Bad request (400): ${errorMsg}\n\nThis might indicate:\n• Invalid model name\n• Unsupported request format\n\nNote: The connection to the server is working! Try adjusting the model name or check server logs.`);
+            } else {
+                throw new Error(`API Error: ${response.status} - ${errorMsg}`);
+            }
         }
 
         const data = await response.json();
-        showStatus('✅ API connection successful! Model is responding.', 'success');
+        console.log('Connection test successful!', data);
+        
+        // Show success with helpful info
+        let successMessage = '✅ API connection successful! ';
+        if (modelsResponse && modelsResponse.ok) {
+            successMessage += 'Both /models and /chat/completions endpoints are working.';
+        } else {
+            successMessage += '/chat/completions endpoint is working.';
+        }
+        showStatus(successMessage, 'success');
     } catch (error) {
         // Better error handling for network errors
         let errorMessage = error.message;
+        
+        // Check if this is a network/CORS error
         if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            errorMessage = 'NetworkError: Unable to reach the API endpoint. Please check:\n' +
-                          '• API URL is correct and includes /v1 path\n' +
-                          '• Server is running and accessible\n' +
-                          '• CORS is properly configured on the server\n' +
-                          '• No firewall or network blocking the connection';
+            console.error('Network or CORS error detected:', error);
+            errorMessage = 'Connection Error: Unable to reach the API endpoint.\n\n' +
+                          'This could be due to:\n' +
+                          '• CORS not configured on the server (common with local APIs)\n' +
+                          '  → If running locally, open index.html via a web server (http://localhost), not file://\n' +
+                          '  → Configure CORS headers on your API server\n' +
+                          '• Server not running or not accessible\n' +
+                          '• Firewall blocking the connection\n' +
+                          '• Wrong API URL (check for typos)\n\n' +
+                          'If this works in SillyTavern:\n' +
+                          '• Make sure you\'re accessing this tool via http:// (not file://)\n' +
+                          '• Check your API server CORS settings allow this origin';
         }
+        
         showStatus(`❌ Connection failed: ${errorMessage}`, 'error');
         console.error('Connection test error:', error);
     } finally {
@@ -251,10 +305,17 @@ async function generateEntries() {
         document.getElementById('sourceText').value = '';
         
     } catch (error) {
-        // Better error handling for network errors
+        // Better error handling for network and API errors
         let errorMessage = error.message;
         if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            errorMessage = 'NetworkError: Unable to reach the API endpoint. Please check your connection and API settings.';
+            errorMessage = 'Connection Error: Unable to reach the API endpoint.\n\n' +
+                          'If the connection test worked but generation fails:\n' +
+                          '• The model might be overloaded or timing out\n' +
+                          '• Try a smaller source text\n' +
+                          '• Check server logs for errors\n\n' +
+                          'If you\'re seeing CORS errors:\n' +
+                          '• Access this tool via http:// not file://\n' +
+                          '• Check CORS settings on your API server';
         }
         showStatus(`❌ Failed to generate entries: ${errorMessage}`, 'error');
         console.error('Generation error:', error);
