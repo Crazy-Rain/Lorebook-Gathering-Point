@@ -28,7 +28,7 @@ A web-based interface for creating SillyTavern-compatible lorebooks using AI ass
    - **DO** serve it via a web server:
    
    ```bash
-   # Using Python (recommended)
+   # Using Python (simple)
    python3 -m http.server 8080
    
    # Using Node.js
@@ -36,9 +36,14 @@ A web-based interface for creating SillyTavern-compatible lorebooks using AI ass
    
    # Using PHP
    php -S localhost:8080
+   
+   # Using Node.js with built-in CORS proxy (BEST for CORS issues!)
+   npm install && npm start
+   # Then access via http://localhost:3000
    ```
    
-   - Then access via `http://localhost:8080` in your browser
+   - Then access via `http://localhost:8080` in your browser (or `http://localhost:3000` for proxy)
+   - **⭐ Having CORS/Firewall issues?** Use the Node.js proxy option (see [SETUP.md](SETUP.md) Option E)
    - See [QUICKSTART.md](QUICKSTART.md) for detailed setup instructions
 
 2. **Configure Your API**
@@ -175,13 +180,18 @@ This test utility helps you:
     
     # PHP
     php -S localhost:8080
+    
+    # Node.js with built-in CORS proxy (BEST for CORS issues!)
+    npm install && npm start
+    # Then access via http://localhost:3000
     ```
-  - Then access via `http://localhost:8080`
+  - Then access via `http://localhost:8080` (or `http://localhost:3000` for proxy)
 
 - **For Local APIs** (LM Studio, Oobabooga, Text Generation WebUI, etc.):
   - Enable CORS on your API server (see your server's documentation)
   - Verify the server is running and accessible
   - Check that the API URL ends with `/v1` (e.g., `http://localhost:5000/v1`)
+  - **⭐ OR**: Use the built-in proxy server (`npm start`) to bypass CORS configuration entirely!
 
 - **For HTTPS Proxy Services** (like `https://anas-proxy.xyz/v1`):
   - **Browser extensions** (ad blockers, privacy tools) may block requests
@@ -191,6 +201,7 @@ This test utility helps you:
   - If it works in SillyTavern but not here:
     - SillyTavern routes through its backend (avoids browser CORS restrictions)
     - Browser-based tools have stricter security constraints
+  - **⭐ BEST SOLUTION**: Use the built-in proxy server (`npm install && npm start`) to bypass these issues!
 
 - **Works in SillyTavern but not here?**
   - Check that you're accessing this tool via http:// not file://
@@ -198,6 +209,7 @@ This test utility helps you:
   - Press F12 to check browser console for specific error messages
   - Verify CORS is configured to allow this origin on your API server
   - Some API servers allow specific origins - you may need to add localhost
+  - **⭐ BEST SOLUTION**: Use the built-in proxy server to avoid all browser restrictions!
 
 **Authentication Errors (401/403):**
 - Verify your API key is correct and has proper permissions
