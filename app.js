@@ -346,12 +346,25 @@ async function generateEntries() {
         // Better error handling for network and API errors
         let errorMessage = error.message;
         if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            errorMessage = 'Connection Error: Unable to reach the API endpoint.\n\n' +
-                          'If the connection test worked but generation fails:\n' +
-                          '• The model might be overloaded or timing out\n' +
-                          '• Try a smaller source text\n' +
-                          '• Check server logs for errors\n\n' +
-                          'If you\'re seeing CORS errors:\n' +
+            const apiUrl = document.getElementById('apiUrl').value.trim();
+            const isHttps = apiUrl.toLowerCase().startsWith('https://');
+            const isLocalhost = apiUrl.includes('localhost') || apiUrl.includes('127.0.0.1');
+            
+            errorMessage = 'Connection Error: Unable to reach the API endpoint.\n\n';
+            
+            if (isHttps && !isLocalhost) {
+                errorMessage += 'For HTTPS endpoints:\n' +
+                              '• Browser extensions (ad blockers) may be blocking requests\n' +
+                              '• If the connection test worked, the model might be overloaded\n' +
+                              '• Try a smaller source text or check server logs\n\n';
+            } else {
+                errorMessage += 'If the connection test worked but generation fails:\n' +
+                              '• The model might be overloaded or timing out\n' +
+                              '• Try a smaller source text\n' +
+                              '• Check server logs for errors\n\n';
+            }
+            
+            errorMessage += 'If you\'re seeing CORS errors:\n' +
                           '• Access this tool via http:// not file://\n' +
                           '• Check CORS settings on your API server';
         }
