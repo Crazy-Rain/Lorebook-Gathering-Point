@@ -15,11 +15,29 @@ A web-based interface for creating SillyTavern-compatible lorebooks using AI ass
 
 ## Getting Started
 
+⚠️ **IMPORTANT**: You must run this tool via a web server for API connections to work. See [SETUP.md](SETUP.md) for complete setup instructions.
+
 ### Basic Usage
 
+⚠️ **IMPORTANT**: You must run this tool via a web server for API connections to work.
+
 1. **Open the Interface**
-   - Simply open `index.html` in your web browser
-   - Or host it on any web server for remote access
+   - **Do NOT** simply open `index.html` in your browser (CORS will block API requests)
+   - **DO** serve it via a web server:
+   
+   ```bash
+   # Using Python (recommended)
+   python3 -m http.server 8080
+   
+   # Using Node.js
+   npx serve
+   
+   # Using PHP
+   php -S localhost:8080
+   ```
+   
+   - Then access via `http://localhost:8080` in your browser
+   - See [QUICKSTART.md](QUICKSTART.md) for detailed setup instructions
 
 2. **Configure Your API**
    - Enter your OpenAI-compatible API endpoint URL
@@ -59,11 +77,14 @@ A web-based interface for creating SillyTavern-compatible lorebooks using AI ass
 This tool works with any OpenAI-compatible API:
 
 - **OpenAI**: `https://api.openai.com/v1`
+- **Anthropic Claude (via proxy)**: `https://anas-proxy.xyz/v1` or other Claude-compatible proxies
 - **LocalAI**: `http://localhost:8080/v1`
 - **Text Generation WebUI**: `http://localhost:5000/v1`
 - **Oobabooga**: `http://localhost:5000/v1`
 - **LM Studio**: `http://localhost:1234/v1`
 - **Any other OpenAI-compatible endpoint**
+
+**Note**: For Claude models via proxy, use model names like `claude-sonnet-4-5-20250929` or `claude-3-opus-20240229`.
 
 ## Lorebook Format
 
@@ -103,6 +124,37 @@ The generated lorebooks are fully compatible with SillyTavern and include:
 - No data collection or tracking
 
 ## Troubleshooting
+
+### Testing Your API Connection
+
+**Having connection issues?** Use the dedicated test utility:
+
+1. Make sure you're running the tool via a web server (see setup instructions above)
+2. Open `test-api-connection.html` in your browser
+3. Enter your API details and click "Run Connection Tests"
+4. The utility will provide detailed diagnostics about what's working and what's not
+
+This test utility helps you:
+- Verify your API URL is correct
+- Check if the server is reachable
+- Distinguish between CORS issues, network errors, and API errors
+- Test both /models and /chat/completions endpoints
+- Get specific error messages with troubleshooting steps
+
+**What to expect when testing:**
+
+- ✅ **Valid API with correct key**: "API connection successful!" with response details
+- ✅ **Valid API with invalid key**: "Server is reachable! Authentication failed" (401/403) - This is good! It means the connection is working.
+- ⚠️ **Valid URL but unsupported endpoint**: 404 error with suggestions to check URL format
+- ⚠️ **Invalid model name**: 400 error with note that connection is working
+- ❌ **Network/CORS error**: Detailed error with suggestions about web server setup and CORS configuration
+- ❌ **Invalid URL**: URL format validation error
+
+**Example: Testing with a proxy service**
+- URL: `https://anas-proxy.xyz/v1`
+- Model: `claude-sonnet-4-5-20250929`
+- Expected: Even without a valid API key, you should get a 401/403 response (not a connection error)
+- If you get a connection error instead, check that you're running via a web server (not file://)
 
 ### API Connection Issues
 

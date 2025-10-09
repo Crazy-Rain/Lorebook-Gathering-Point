@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Connection Test Utility</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .results h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .test-step {
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            background: white;
+            border-left: 4px solid #ddd;
+        }
+
+        .test-step.running {
+            border-left-color: #2196F3;
+            background: #e3f2fd;
+        }
+
+        .test-step.success {
+            border-left-color: #4CAF50;
+            background: #e8f5e9;
+        }
+
+        .test-step.error {
+            border-left-color: #f44336;
+            background: #ffebee;
+        }
+
+        .test-step h4 {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .test-step .icon {
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+
+        .test-step pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        .help-text {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔧 API Connection Test Utility</h1>
+            <p>Diagnose connection issues with your API endpoint</p>
+        </header>
+
+        <div class="content">
+            <div class="info-box">
+                <h3>📋 What this tool does:</h3>
+                <ul>
+                    <li>Tests basic connectivity to your API endpoint</li>
+                    <li>Checks /models endpoint availability</li>
+                    <li>Tests /chat/completions endpoint</li>
+                    <li>Provides detailed error diagnostics</li>
+                    <li>Helps distinguish between CORS, network, and API errors</li>
+                </ul>
+            </div>
+
+            <div class="warning-box">
+                <strong>⚠️ Important:</strong> You must access this page via a web server (http://localhost:8080), not by opening the HTML file directly (file://). 
+                Otherwise, CORS will block all API requests.
+                <br><br>
+                <strong>Current URL:</strong> <code id="currentUrl"></code>
+            </div>
+
+            <div class="form-group">
+                <label for="apiUrl">API Base URL:</label>
+                <input type="text" id="apiUrl" placeholder="https://api.openai.com/v1" value="https://api.openai.com/v1">
+                <div class="help-text">
+                    Examples: 
+                    <code>https://api.openai.com/v1</code>, 
+                    <code>https://anas-proxy.xyz/v1</code>, 
+                    <code>http://localhost:1234/v1</code>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="apiKey">API Key:</label>
+                <input type="password" id="apiKey" placeholder="sk-... or your API key">
+                <div class="help-text">
+                    For testing connectivity, even an invalid key will show if the server is reachable.
+                    Local APIs often don't need a real key - try "test-key".
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="modelName">Model Name (optional):</label>
+                <input type="text" id="modelName" placeholder="gpt-3.5-turbo">
+                <div class="help-text">
+                    Examples: 
+                    <code>gpt-3.5-turbo</code>, 
+                    <code>claude-sonnet-4-5-20250929</code>, 
+                    <code>mistral-7b</code>
+                </div>
+            </div>
+
+            <button id="testBtn" onclick="runTests()">🚀 Run Connection Tests</button>
+
+            <div id="results" class="results" style="display: none;">
+                <h3>Test Results</h3>
+                <div id="testSteps"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Display current URL
+        document.getElementById('currentUrl').textContent = window.location.href;
+
+        // Check if running via file://
+        if (window.location.protocol === 'file:') {
+            document.getElementById('currentUrl').style.color = 'red';
+            document.getElementById('currentUrl').style.fontWeight = 'bold';
+        } else {
+            document.getElementById('currentUrl').style.color = 'green';
+            document.getElementById('currentUrl').style.fontWeight = 'bold';
+        }
+
+        let testStepsDiv;
+
+        function addTestStep(title, status = 'running') {
+            const step = document.createElement('div');
+            step.className = `test-step ${status}`;
+            step.innerHTML = `
+                <h4>
+                    <span class="icon">${status === 'running' ? '<div class="spinner"></div>' : status === 'success' ? '✅' : status === 'error' ? '❌' : '⏳'}</span>
+                    <span>${title}</span>
+                </h4>
+                <div class="details"></div>
+            `;
+            testStepsDiv.appendChild(step);
+            return step;
+        }
+
+        function updateTestStep(step, status, details) {
+            step.className = `test-step ${status}`;
+            const icon = step.querySelector('.icon');
+            icon.innerHTML = status === 'success' ? '✅' : status === 'error' ? '❌' : '⏳';
+            
+            const detailsDiv = step.querySelector('.details');
+            detailsDiv.innerHTML = details;
+        }
+
+        async function runTests() {
+            const apiUrl = document.getElementById('apiUrl').value.trim();
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const modelName = document.getElementById('modelName').value.trim();
+
+            if (!apiUrl) {
+                alert('Please enter an API URL');
+                return;
+            }
+
+            if (!apiKey) {
+                alert('Please enter an API key (can be a placeholder for testing)');
+                return;
+            }
+
+            // Show results section
+            document.getElementById('results').style.display = 'block';
+            testStepsDiv = document.getElementById('testSteps');
+            testStepsDiv.innerHTML = '';
+
+            // Disable button
+            const testBtn = document.getElementById('testBtn');
+            testBtn.disabled = true;
+            testBtn.textContent = 'Running tests...';
+
+            try {
+                // Test 1: Check URL format
+                const step1 = addTestStep('Step 1: Validating URL format', 'running');
+                try {
+                    const url = new URL(apiUrl);
+                    updateTestStep(step1, 'success', `
+                        <p>URL is valid</p>
+                        <pre>Protocol: ${url.protocol}
+Host: ${url.hostname}
+Port: ${url.port || (url.protocol === 'https:' ? '443' : '80')}
+Path: ${url.pathname}</pre>
+                    `);
+                } catch (e) {
+                    updateTestStep(step1, 'error', `
+                        <p>Invalid URL format</p>
+                        <pre>Error: ${e.message}</pre>
+                    `);
+                    return;
+                }
+
+                // Test 2: Test /models endpoint
+                const step2 = addTestStep('Step 2: Testing /models endpoint', 'running');
+                try {
+                    const startTime = Date.now();
+                    const response = await fetch(`${apiUrl}/models`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${apiKey}`
+                        }
+                    });
+                    const duration = Date.now() - startTime;
+
+                    let responseText = '';
+                    let responseData = null;
+                    try {
+                        responseText = await response.text();
+                        responseData = JSON.parse(responseText);
+                    } catch (e) {
+                        // Not JSON
+                    }
+
+                    if (response.ok) {
+                        updateTestStep(step2, 'success', `
+                            <p>✅ /models endpoint is accessible and working!</p>
+                            <pre>Status: ${response.status} ${response.statusText}
+Response time: ${duration}ms
+Models found: ${responseData?.data?.length || 'N/A'}</pre>
+                        `);
+                    } else {
+                        let message = `Status ${response.status}: ${response.statusText}`;
+                        if (response.status === 401 || response.status === 403) {
+                            message = '✅ Server is reachable! (Authentication failed - check your API key)';
+                        } else if (response.status === 404) {
+                            message = '⚠️ /models endpoint not found (some APIs don\'t support this, will test chat/completions next)';
+                        }
+
+                        updateTestStep(step2, response.status === 404 ? 'running' : 'error', `
+                            <p>${message}</p>
+                            <pre>Status: ${response.status} ${response.statusText}
+Response time: ${duration}ms
+Response: ${responseText.substring(0, 500)}</pre>
+                        `);
+                    }
+                } catch (e) {
+                    updateTestStep(step2, 'error', `
+                        <p>❌ Failed to connect to /models endpoint</p>
+                        <pre>Error: ${e.name}: ${e.message}
+
+Common causes:
+• CORS not configured (you must run via web server, not file://)
+• Server not running or not accessible
+• Firewall blocking the connection
+• Wrong API URL
+• Network connectivity issues</pre>
+                    `);
+                }
+
+                // Test 3: Test /chat/completions endpoint
+                const step3 = addTestStep('Step 3: Testing /chat/completions endpoint', 'running');
+                try {
+                    const testModel = modelName || 'gpt-3.5-turbo';
+                    const startTime = Date.now();
+                    const response = await fetch(`${apiUrl}/chat/completions`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${apiKey}`
+                        },
+                        body: JSON.stringify({
+                            model: testModel,
+                            messages: [
+                                { role: 'user', content: 'test' }
+                            ],
+                            max_tokens: 5
+                        })
+                    });
+                    const duration = Date.now() - startTime;
+
+                    let responseText = '';
+                    let responseData = null;
+                    try {
+                        responseText = await response.text();
+                        responseData = JSON.parse(responseText);
+                    } catch (e) {
+                        // Not JSON
+                    }
+
+                    if (response.ok) {
+                        updateTestStep(step3, 'success', `
+                            <p>✅ /chat/completions endpoint is working perfectly!</p>
+                            <pre>Status: ${response.status} ${response.statusText}
+Response time: ${duration}ms
+Model: ${testModel}
+Response preview: ${JSON.stringify(responseData, null, 2).substring(0, 300)}...</pre>
+                            <p style="margin-top: 10px; padding: 10px; background: #c8e6c9; border-radius: 4px;">
+                                <strong>🎉 Success!</strong> Your API is properly configured and working. 
+                                You can now use the main Lorebook Generator with these settings.
+                            </p>
+                        `);
+                    } else {
+                        let message = '';
+                        let severity = 'error';
+                        
+                        if (response.status === 401 || response.status === 403) {
+                            message = '✅ Server is reachable! Authentication failed - verify your API key is correct.';
+                            severity = 'success';
+                        } else if (response.status === 404) {
+                            message = '❌ /chat/completions endpoint not found. Check your API URL (should end with /v1).';
+                        } else if (response.status === 400) {
+                            message = '✅ Server is reachable! Bad request - likely invalid model name or request format.';
+                            severity = 'success';
+                        } else {
+                            message = `Server returned error status ${response.status}`;
+                        }
+
+                        updateTestStep(step3, severity, `
+                            <p>${message}</p>
+                            <pre>Status: ${response.status} ${response.statusText}
+Response time: ${duration}ms
+Model tested: ${testModel}
+Response: ${responseText.substring(0, 500)}</pre>
+                        `);
+                    }
+                } catch (e) {
+                    updateTestStep(step3, 'error', `
+                        <p>❌ Failed to connect to /chat/completions endpoint</p>
+                        <pre>Error: ${e.name}: ${e.message}
+
+Common causes:
+• CORS not configured (you must run via web server, not file://)
+• Server not running or not accessible  
+• Firewall blocking the connection
+• Wrong API URL
+• Network connectivity issues
+
+If /models worked but this failed:
+• Check that your API supports the chat/completions endpoint
+• Verify the model name is correct
+• Check server logs for more details</pre>
+                    `);
+                }
+
+            } finally {
+                testBtn.disabled = false;
+                testBtn.textContent = '🚀 Run Connection Tests';
+            }
+        }
+
+        // Load saved settings
+        const savedApiUrl = localStorage.getItem('apiUrl');
+        const savedApiKey = localStorage.getItem('apiKey');
+        const savedModelName = localStorage.getItem('modelName');
+
+        if (savedApiUrl) document.getElementById('apiUrl').value = savedApiUrl;
+        if (savedApiKey) document.getElementById('apiKey').value = savedApiKey;
+        if (savedModelName) document.getElementById('modelName').value = savedModelName;
+    </script>
+</body>
+</html>
