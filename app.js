@@ -57,11 +57,111 @@ async function testConnection() {
         const data = await response.json();
         showStatus('✅ API connection successful! Model is responding.', 'success');
     } catch (error) {
-        showStatus(`❌ Connection failed: ${error.message}`, 'error');
+        // Better error handling for network errors
+        let errorMessage = error.message;
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            errorMessage = 'NetworkError: Unable to reach the API endpoint. Please check:\n' +
+                          '• API URL is correct and includes /v1 path\n' +
+                          '• Server is running and accessible\n' +
+                          '• CORS is properly configured on the server\n' +
+                          '• No firewall or network blocking the connection';
+        }
+        showStatus(`❌ Connection failed: ${errorMessage}`, 'error');
         console.error('Connection test error:', error);
     } finally {
         setLoading(false);
     }
+}
+
+// Fetch available models from API
+async function fetchAvailableModels() {
+    const apiUrl = document.getElementById('apiUrl').value.trim();
+    const apiKey = document.getElementById('apiKey').value.trim();
+
+    if (!apiUrl || !apiKey) {
+        showStatus('Please enter both API URL and API Key first', 'error');
+        return;
+    }
+
+    setLoading(true);
+    const refreshBtn = document.getElementById('refreshModelsBtn');
+    if (refreshBtn) {
+        refreshBtn.disabled = true;
+    }
+
+    try {
+        const response = await fetch(`${apiUrl}/models`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch models: ${response.status} - ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        
+        // Extract model IDs from response
+        let models = [];
+        if (data.data && Array.isArray(data.data)) {
+            models = data.data.map(model => model.id || model.name || model).filter(m => m);
+        } else if (Array.isArray(data)) {
+            models = data.map(model => model.id || model.name || model).filter(m => m);
+        }
+
+        if (models.length === 0) {
+            showStatus('⚠️ No models found. You can still enter a model name manually.', 'info');
+            return;
+        }
+
+        // Save models to localStorage
+        localStorage.setItem('availableModels', JSON.stringify(models));
+        
+        // Update the datalist
+        updateModelDatalist(models);
+        
+        showStatus(`✅ Found ${models.length} available model(s)`, 'success');
+    } catch (error) {
+        // Better error handling for network errors
+        let errorMessage = error.message;
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            errorMessage = 'NetworkError: Unable to fetch models. This endpoint may not support the /models API. You can still enter a model name manually.';
+        }
+        showStatus(`⚠️ ${errorMessage}`, 'info');
+        console.error('Model fetch error:', error);
+        
+        // Try to load cached models from localStorage
+        const cachedModels = localStorage.getItem('availableModels');
+        if (cachedModels) {
+            try {
+                const models = JSON.parse(cachedModels);
+                updateModelDatalist(models);
+                showStatus('⚠️ Could not fetch models, using cached list. You can still enter a model name manually.', 'info');
+            } catch (e) {
+                console.error('Error parsing cached models:', e);
+            }
+        }
+    } finally {
+        setLoading(false);
+        if (refreshBtn) {
+            refreshBtn.disabled = false;
+        }
+    }
+}
+
+// Update the model datalist with available models
+function updateModelDatalist(models) {
+    let datalist = document.getElementById('modelList');
+    if (!datalist) {
+        datalist = document.createElement('datalist');
+        datalist.id = 'modelList';
+        document.body.appendChild(datalist);
+        document.getElementById('modelName').setAttribute('list', 'modelList');
+    }
+    
+    datalist.innerHTML = models.map(model => `<option value="${escapeHtml(model)}">`).join('');
 }
 
 // Generate lorebook entries using AI
@@ -151,7 +251,12 @@ async function generateEntries() {
         document.getElementById('sourceText').value = '';
         
     } catch (error) {
-        showStatus(`❌ Failed to generate entries: ${error.message}`, 'error');
+        // Better error handling for network errors
+        let errorMessage = error.message;
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            errorMessage = 'NetworkError: Unable to reach the API endpoint. Please check your connection and API settings.';
+        }
+        showStatus(`❌ Failed to generate entries: ${errorMessage}`, 'error');
         console.error('Generation error:', error);
     } finally {
         setLoading(false);
@@ -392,6 +497,17 @@ function loadSettings() {
     if (savedApiUrl) document.getElementById('apiUrl').value = savedApiUrl;
     if (savedApiKey) document.getElementById('apiKey').value = savedApiKey;
     if (savedModelName) document.getElementById('modelName').value = savedModelName;
+    
+    // Load cached models if available
+    const cachedModels = localStorage.getItem('availableModels');
+    if (cachedModels) {
+        try {
+            const models = JSON.parse(cachedModels);
+            updateModelDatalist(models);
+        } catch (e) {
+            console.error('Error loading cached models:', e);
+        }
+    }
 }
 
 // Save settings to localStorage
