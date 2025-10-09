@@ -4,38 +4,124 @@ Get started with the Lorebook Generator in 5 minutes!
 
 ## Step 1: Open the Interface
 
-Simply open `index.html` in your web browser. No installation required!
+⚠️ **IMPORTANT**: For API connections to work properly, you **must** run this tool via a web server (not by opening `index.html` directly).
 
-**OR** host it on a web server:
+### Recommended Setup (Choose one method):
+
+**Option 1: Using Python (Recommended)**
 ```bash
-# Using Python
+# Navigate to the project directory
+cd /path/to/Lorebook-Gathering-Point
+
+# Start the web server
 python3 -m http.server 8080
 
-# Using Node.js
+# Or on Windows, you might need:
+python -m http.server 8080
+```
+
+**Option 2: Using Node.js**
+```bash
+# Navigate to the project directory
+cd /path/to/Lorebook-Gathering-Point
+
+# Install and run serve (if not already installed)
 npx serve
 
-# Using PHP
+# Or if you have serve installed globally:
+serve
+```
+
+**Option 3: Using PHP**
+```bash
+# Navigate to the project directory
+cd /path/to/Lorebook-Gathering-Point
+
+# Start the web server
 php -S localhost:8080
 ```
 
-Then navigate to `http://localhost:8080` in your browser.
+**Then navigate to `http://localhost:8080` in your web browser.**
+
+### Why is this necessary?
+
+- **CORS Protection**: Modern browsers block API requests from `file://` URLs for security
+- **API Compatibility**: Most API endpoints expect requests from `http://` or `https://` origins
+- **Local Testing**: Even local APIs like LM Studio need proper HTTP origins
+
+### Verification
+
+You'll know it's working correctly when:
+- Your browser's address bar shows `http://localhost:8080` (not `file://`)
+- The "Test Connection" button can successfully reach your API
+- No CORS errors appear in the browser console (press F12 to check)
 
 ## Step 2: Configure Your API
 
-1. Enter your API endpoint URL
-   - **OpenAI**: `https://api.openai.com/v1`
-   - **Local (LM Studio)**: `http://localhost:1234/v1`
-   - **Text Generation WebUI**: `http://localhost:5000/v1`
+### API Endpoint Examples
 
-2. Enter your API key
-   - For OpenAI: Your actual API key (starts with `sk-`)
-   - For local models: Can often be left empty or any placeholder
+Choose the endpoint that matches your setup:
 
-3. Enter your model name
-   - **OpenAI**: `gpt-3.5-turbo` or `gpt-4`
-   - **Local**: Your model name (e.g., `mistral-7b`, `llama-2-13b`)
+**OpenAI (Official)**
+- URL: `https://api.openai.com/v1`
+- API Key: Your OpenAI API key (starts with `sk-`)
+- Model: `gpt-3.5-turbo`, `gpt-4`, `gpt-4-turbo`, etc.
 
-4. Click **"Test Connection"** to verify everything works
+**Anthropic Claude via Proxy**
+- URL: `https://anas-proxy.xyz/v1` (or other Claude proxy)
+- API Key: Your proxy API key
+- Model: `claude-sonnet-4-5-20250929`, `claude-3-opus-20240229`, etc.
+
+**Local Models**
+- **LM Studio**: 
+  - URL: `http://localhost:1234/v1`
+  - API Key: Not required (use any placeholder like `lm-studio`)
+  - Model: Your loaded model name
+  
+- **Text Generation WebUI / Oobabooga**: 
+  - URL: `http://localhost:5000/v1`
+  - API Key: Not required (use any placeholder)
+  - Model: Check your loaded model
+
+**Other OpenAI-Compatible APIs**
+- Any service that implements the OpenAI API format
+- URL should typically end with `/v1`
+- Check your provider's documentation for the correct endpoint
+
+### Setup Steps
+
+1. **Enter your API endpoint URL** in the "API Base URL" field
+
+2. **Enter your API key**
+   - Required for: OpenAI, proxy services, and most cloud APIs
+   - Optional for: Local APIs (LM Studio, Text Generation WebUI)
+   - If unsure, try entering any placeholder text for local APIs
+
+3. **Enter your model name**
+   - Must match exactly what your API expects
+   - Use "🔄 Refresh Models" to auto-detect available models
+   - Or check your API provider's documentation
+
+4. **Click "Test Connection"** to verify everything works
+   - ✅ Success: You'll see "API connection successful!"
+   - ❌ Error: Follow the troubleshooting tips in the error message
+   
+### Troubleshooting Connection Tests
+
+**What you should see:**
+- **Valid connection**: "API connection successful!" (even without a valid API key, you might see 401/403)
+- **Invalid URL/CORS issue**: "Connection Error: Unable to reach the API endpoint"
+
+**If you get a connection error:**
+1. Make sure you're accessing via `http://localhost:8080` (not `file://`)
+2. Check that the API URL is correct (typos, missing `/v1`, etc.)
+3. For local APIs, ensure the server is running
+4. For cloud APIs, check your internet connection
+
+**If you get authentication errors (401/403):**
+- ✅ **Good news**: The connection is working!
+- Check your API key is correct
+- Verify the key has proper permissions
 
 ## Step 3: Create Lorebook Entries
 
@@ -138,6 +224,29 @@ Transform character sheets, wikis, or notes into structured lorebooks.
 ✅ **Save Often**: Download your lorebook regularly
 
 ## Need Help?
+
+### Troubleshooting Connection Issues
+
+If the "Test Connection" button isn't working:
+
+1. **Use the diagnostic tool**: Open `test-api-connection.html` in your browser
+   - This provides detailed step-by-step diagnostics
+   - Shows exactly where the connection is failing
+   - Provides specific troubleshooting advice
+
+2. **Check your setup**:
+   - Are you accessing via `http://localhost:8080` (not `file://`)?
+   - Is your API server running (for local APIs)?
+   - Is your API URL correct (check for typos)?
+   - Is your API key valid?
+
+3. **Common solutions**:
+   - Restart your web server
+   - Check firewall settings
+   - Enable CORS on your API server (for local APIs)
+   - Verify your internet connection (for cloud APIs)
+
+### Additional Resources
 
 - Check the main [README.md](README.md) for detailed documentation
 - See [EXAMPLES.md](EXAMPLES.md) for specific examples
