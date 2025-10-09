@@ -101,6 +101,14 @@ http://localhost:8080
 
 **Note**: Even with an invalid API key, you should get a 401/403 error (not a connection error). This confirms the server is reachable.
 
+**⚠️ HTTPS Proxy Troubleshooting**:
+- If you get connection errors but this works in SillyTavern:
+  - **Browser extensions** (ad blockers) may be blocking the request - try disabling them
+  - Press **F12** to open browser console and check for `ERR_BLOCKED_BY_CLIENT` errors
+  - SillyTavern uses a backend proxy which avoids browser CORS restrictions
+  - Browser-based tools like this have stricter security constraints
+- Some proxy services only support server-to-server requests, not direct browser access
+
 ### For LM Studio (Local)
 
 1. Start LM Studio and load a model
@@ -203,9 +211,33 @@ If you see CORS errors in the browser console (F12):
 2. Add your origin (`http://localhost:8080`) to the allowed origins
 3. Restart your API server
 
-**For cloud APIs**:
+**For cloud APIs and HTTPS proxies**:
 - Make sure you're accessing via `http://localhost` (not `file://`)
 - Cloud APIs should already have CORS properly configured
+- **Browser extensions** (ad blockers, privacy tools) may block requests
+  - Try disabling extensions temporarily to test
+  - Look for `ERR_BLOCKED_BY_CLIENT` errors in console
+- **HTTPS proxy services** may have CORS restrictions for browser-based access
+  - SillyTavern works differently (uses a backend proxy)
+  - Browser-based tools have stricter security constraints
+
+### "Connection works in SillyTavern but not here"
+
+This is common for HTTPS proxy endpoints like `https://anas-proxy.xyz/v1`:
+
+**Why this happens**:
+- SillyTavern may route requests through its own backend/proxy to avoid CORS
+- Browser-based tools must make direct requests (more security restrictions)
+- Browser extensions can interfere with proxy requests
+
+**Solutions to try**:
+1. **Disable browser extensions** temporarily (ad blockers, privacy tools)
+2. **Check browser console** (F12) for specific error messages
+3. **Try a different browser** to rule out extension interference
+4. **Verify proxy access** by opening the API URL directly in your browser
+5. For local development, consider setting up your own CORS proxy
+
+**Note**: Some proxy services are designed for server-to-server communication and may not support direct browser access.
 
 ## Next Steps
 

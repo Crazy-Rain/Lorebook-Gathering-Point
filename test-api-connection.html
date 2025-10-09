@@ -215,6 +215,22 @@
                 <strong>Current URL:</strong> <code id="currentUrl"></code>
             </div>
 
+            <div class="info-box" style="background: #fff3e0; border-left-color: #ff9800;">
+                <h3>🔒 Browser Security & HTTPS Proxies</h3>
+                <p><strong>Important for HTTPS endpoints (like https://anas-proxy.xyz):</strong></p>
+                <ul>
+                    <li><strong>Browser extensions</strong> (ad blockers, privacy tools) may block proxy requests</li>
+                    <li><strong>CORS restrictions</strong> apply differently than in SillyTavern (which uses a backend)</li>
+                    <li><strong>Mixed content</strong> policies may interfere with some proxies</li>
+                </ul>
+                <p><strong>If the test fails but works in SillyTavern:</strong></p>
+                <ul>
+                    <li>Try disabling browser extensions temporarily</li>
+                    <li>Check browser console (F12) for specific errors like ERR_BLOCKED_BY_CLIENT</li>
+                    <li>This is a browser-based tool with different security constraints than SillyTavern</li>
+                </ul>
+            </div>
+
             <div class="form-group">
                 <label for="apiUrl">API Base URL:</label>
                 <input type="text" id="apiUrl" placeholder="https://api.openai.com/v1" value="https://api.openai.com/v1">
@@ -382,16 +398,41 @@ Response: ${responseText.substring(0, 500)}</pre>
                         `);
                     }
                 } catch (e) {
+                    let errorDetails = `Error: ${e.name}: ${e.message}\n\n`;
+                    
+                    // Provide context-specific guidance
+                    const isHttps = apiUrl.toLowerCase().startsWith('https://');
+                    const isLocalhost = apiUrl.includes('localhost') || apiUrl.includes('127.0.0.1');
+                    
+                    if (isHttps && !isLocalhost) {
+                        errorDetails += `Common causes for HTTPS endpoints (proxies):\n` +
+                                      `• Browser/ad-blocker blocking the request (most common)\n` +
+                                      `  → Try disabling ad blockers and privacy extensions\n` +
+                                      `  → Some browsers block mixed content (http→https requests)\n` +
+                                      `• CORS not configured on the proxy server\n` +
+                                      `  → The proxy may not allow requests from web browsers\n` +
+                                      `• Server temporarily unavailable or wrong URL\n` +
+                                      `  → Verify URL is correct and service is online\n\n` +
+                                      `💡 If this works in SillyTavern:\n` +
+                                      `  → SillyTavern likely uses a backend proxy to avoid CORS\n` +
+                                      `  → Browser-based tools have different security restrictions`;
+                    } else if (isLocalhost) {
+                        errorDetails += `Common causes for local APIs:\n` +
+                                      `• CORS not configured (you must run via web server, not file://)\n` +
+                                      `• Server not running or not accessible\n` +
+                                      `• Wrong port or endpoint URL`;
+                    } else {
+                        errorDetails += `Common causes:\n` +
+                                      `• CORS not configured (you must run via web server, not file://)\n` +
+                                      `• Server not running or not accessible\n` +
+                                      `• Firewall blocking the connection\n` +
+                                      `• Wrong API URL\n` +
+                                      `• Network connectivity issues`;
+                    }
+                    
                     updateTestStep(step2, 'error', `
                         <p>❌ Failed to connect to /models endpoint</p>
-                        <pre>Error: ${e.name}: ${e.message}
-
-Common causes:
-• CORS not configured (you must run via web server, not file://)
-• Server not running or not accessible
-• Firewall blocking the connection
-• Wrong API URL
-• Network connectivity issues</pre>
+                        <pre>${errorDetails}</pre>
                     `);
                 }
 
@@ -462,21 +503,52 @@ Response: ${responseText.substring(0, 500)}</pre>
                         `);
                     }
                 } catch (e) {
+                    let errorDetails = `Error: ${e.name}: ${e.message}\n\n`;
+                    
+                    // Provide context-specific guidance
+                    const isHttps = apiUrl.toLowerCase().startsWith('https://');
+                    const isLocalhost = apiUrl.includes('localhost') || apiUrl.includes('127.0.0.1');
+                    
+                    if (isHttps && !isLocalhost) {
+                        errorDetails += `Common causes for HTTPS endpoints (proxies):\n` +
+                                      `• Browser/ad-blocker blocking the request (most common)\n` +
+                                      `  → Try disabling ad blockers and privacy extensions\n` +
+                                      `  → Check browser console for ERR_BLOCKED_BY_CLIENT\n` +
+                                      `• CORS not configured on the proxy server\n` +
+                                      `  → The proxy may not allow requests from web browsers\n` +
+                                      `• Server temporarily unavailable or wrong URL\n\n` +
+                                      `💡 If this works in SillyTavern:\n` +
+                                      `  → SillyTavern likely uses a backend proxy to avoid CORS\n` +
+                                      `  → Browser-based tools have different security restrictions\n\n` +
+                                      `If /models worked but this failed:\n` +
+                                      `• Check that your API supports the chat/completions endpoint\n` +
+                                      `• Verify the model name is correct\n` +
+                                      `• Check server logs for more details`;
+                    } else if (isLocalhost) {
+                        errorDetails += `Common causes for local APIs:\n` +
+                                      `• CORS not configured (you must run via web server, not file://)\n` +
+                                      `• Server not running or not accessible\n` +
+                                      `• Wrong port or endpoint URL\n\n` +
+                                      `If /models worked but this failed:\n` +
+                                      `• Check that your API supports the chat/completions endpoint\n` +
+                                      `• Verify the model name is correct\n` +
+                                      `• Check server logs for more details`;
+                    } else {
+                        errorDetails += `Common causes:\n` +
+                                      `• CORS not configured (you must run via web server, not file://)\n` +
+                                      `• Server not running or not accessible  \n` +
+                                      `• Firewall blocking the connection\n` +
+                                      `• Wrong API URL\n` +
+                                      `• Network connectivity issues\n\n` +
+                                      `If /models worked but this failed:\n` +
+                                      `• Check that your API supports the chat/completions endpoint\n` +
+                                      `• Verify the model name is correct\n` +
+                                      `• Check server logs for more details`;
+                    }
+                    
                     updateTestStep(step3, 'error', `
                         <p>❌ Failed to connect to /chat/completions endpoint</p>
-                        <pre>Error: ${e.name}: ${e.message}
-
-Common causes:
-• CORS not configured (you must run via web server, not file://)
-• Server not running or not accessible  
-• Firewall blocking the connection
-• Wrong API URL
-• Network connectivity issues
-
-If /models worked but this failed:
-• Check that your API supports the chat/completions endpoint
-• Verify the model name is correct
-• Check server logs for more details</pre>
+                        <pre>${errorDetails}</pre>
                     `);
                 }
 
