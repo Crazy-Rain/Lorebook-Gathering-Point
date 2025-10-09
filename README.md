@@ -25,6 +25,7 @@ A web-based interface for creating SillyTavern-compatible lorebooks using AI ass
    - Enter your OpenAI-compatible API endpoint URL
    - Provide your API key
    - Select the model you want to use (e.g., gpt-3.5-turbo, gpt-4, or local model)
+   - Optional: Click "🔄 Refresh Models" to auto-detect available models from your API
    - Click "Test Connection" to verify settings
 
 3. **Create Lorebook Entries**
@@ -107,6 +108,8 @@ The generated lorebooks are fully compatible with SillyTavern and include:
 - Verify your API URL includes the `/v1` path
 - Check that your API key is valid
 - Ensure CORS is enabled on local API endpoints
+- For network errors, the app will provide detailed troubleshooting steps
+- If you see "NetworkError", verify your server is running and accessible
 - For local APIs, you may need to configure CORS headers
 
 ### Generation Issues
