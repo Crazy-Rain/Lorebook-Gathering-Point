@@ -347,6 +347,12 @@
                     <label for="sourceText">Source Text/Information:</label>
                     <textarea id="sourceText" placeholder="Paste your character description, world lore, or any information you want to convert into lorebook entries..."></textarea>
                     <p class="help-text">Paste the text you want to process into lorebook entries. The AI will extract key information and create structured entries.</p>
+                    <div style="margin-top: 10px;">
+                        <button class="btn btn-secondary" onclick="browseSourceFile()">📁 Browse Files</button>
+                        <input type="file" id="sourceFileInput" style="display: none;" accept=".txt,.pdf,.json,.doc,.docx,.md" onchange="handleSourceFileUpload(event)">
+                        <span id="fileNameDisplay" style="margin-left: 10px; color: #666; font-style: italic;"></span>
+                    </div>
+                    <p class="help-text" style="margin-top: 5px;">Supported formats: TXT, PDF, JSON, Word (.doc/.docx), Markdown (.md)</p>
                 </div>
                 <div class="form-group">
                     <label for="processingPrompt">Processing Instructions (Optional):</label>
@@ -402,5 +408,12 @@ Source text:</textarea>
     </div>
 
     <script src="app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        // Configure PDF.js worker
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+    </script>
 </body>
 </html>

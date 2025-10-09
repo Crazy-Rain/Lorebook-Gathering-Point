@@ -5,6 +5,7 @@ A web-based interface for creating SillyTavern-compatible lorebooks using AI ass
 ## Features
 
 - 🤖 **AI-Powered Generation**: Use any OpenAI-compatible API to automatically extract and structure lorebook entries from source text
+- 📁 **File Import**: Upload TXT, PDF, JSON, Word (.doc/.docx), and Markdown (.md) files as source material
 - 🔓 **Uncensored Processing**: No content filtering or restrictions - processes information as-is for maximum accuracy
 - ✏️ **Manual Entry Creation**: Add and edit lorebook entries manually when needed
 - 💾 **Import/Export**: Full support for SillyTavern lorebook JSON format
@@ -28,13 +29,20 @@ A web-based interface for creating SillyTavern-compatible lorebooks using AI ass
 
 3. **Create Lorebook Entries**
    
-   **Option A: AI-Generated Entries**
+   **Option A: Upload a File**
+   - Click the "📁 Browse Files" button below the source text field
+   - Select a file from your computer
+   - Supported formats: TXT, PDF, JSON, Word (.doc/.docx), Markdown (.md)
+   - The content will be automatically loaded into the source text field
+   - Use the loaded content for AI generation or as reference
+   
+   **Option B: AI-Generated Entries**
    - Paste your source text (character descriptions, world lore, etc.)
    - Optionally customize the processing instructions
    - Click "Generate Entries with AI"
    - The AI will extract key information and create structured entries
    
-   **Option B: Manual Entries**
+   **Option C: Manual Entries**
    - Enter trigger keys (comma-separated)
    - Write the entry content
    - Click "Add Entry"

@@ -2,7 +2,36 @@
 
 This document provides examples of how to use the Lorebook Generator.
 
-## Example 1: Creating a Character Lorebook
+## Example 1: Importing a Document File
+
+### Using the Browse Files Feature
+
+1. Click the "📁 Browse Files" button in the "Generate Lorebook Entries" section
+2. Select a file from your computer:
+   - **TXT files**: Plain text character sheets, story outlines, world-building notes
+   - **PDF files**: Character profiles, campaign guides, published materials
+   - **JSON files**: Existing lorebooks or structured data
+   - **Word documents**: Character backgrounds, detailed lore documents
+   - **Markdown files**: GitHub wikis, formatted documentation
+
+3. The content is automatically extracted and loaded into the source text field
+4. For JSON files, the system detects if it's a SillyTavern lorebook and offers to import it directly
+5. Once loaded, you can either:
+   - Use the AI to generate entries from the content
+   - Review and manually copy relevant sections to create entries
+
+### Example: Loading a Character Profile PDF
+
+```
+1. Click "Browse Files"
+2. Select "character_profile.pdf"
+3. System extracts all text from the PDF
+4. Content appears in the source text field
+5. Click "Generate Entries with AI"
+6. Review and download the generated lorebook
+```
+
+## Example 2: Creating a Character Lorebook
 
 ### Source Text
 ```

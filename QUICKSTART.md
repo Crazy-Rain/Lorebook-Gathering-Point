@@ -39,7 +39,19 @@ Then navigate to `http://localhost:8080` in your browser.
 
 ## Step 3: Create Lorebook Entries
 
-### Option A: Use AI to Generate Entries
+### Option A: Upload a Document
+
+1. Click the **"📁 Browse Files"** button
+
+2. Select a file from your computer
+   - Supported formats: TXT, PDF, JSON, Word (.doc/.docx), Markdown (.md)
+   - The file content will load automatically into the source text field
+
+3. Review the loaded content
+
+4. Click **"🤖 Generate Entries with AI"** to process the content
+
+### Option B: Use AI to Generate Entries
 
 1. Paste your source text in the "Source Text/Information" field
    ```
@@ -54,7 +66,22 @@ Then navigate to `http://localhost:8080` in your browser.
 
 5. Review the generated entries
 
-### Option B: Add Entries Manually
+### Option B: Use AI to Generate Entries
+
+1. Paste your source text in the "Source Text/Information" field
+   ```
+   Example: Character descriptions, world lore, background information
+   ```
+
+2. (Optional) Customize the processing instructions
+
+3. Click **"🤖 Generate Entries with AI"**
+
+4. Wait for the AI to process and create entries
+
+5. Review the generated entries
+
+### Option C: Add Entries Manually
 
 1. Enter trigger keys (comma-separated)
    ```

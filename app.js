@@ -409,3 +409,114 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById(id).addEventListener('change', saveSettings);
     });
 });
+
+// Browse for source file
+function browseSourceFile() {
+    document.getElementById('sourceFileInput').click();
+}
+
+// Handle source file upload
+async function handleSourceFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const fileNameDisplay = document.getElementById('fileNameDisplay');
+    fileNameDisplay.textContent = `Loading: ${file.name}...`;
+    
+    setLoading(true);
+
+    try {
+        let text = '';
+        const fileName = file.name.toLowerCase();
+
+        if (fileName.endsWith('.txt') || fileName.endsWith('.md')) {
+            // Handle plain text and markdown files
+            text = await readTextFile(file);
+        } else if (fileName.endsWith('.pdf')) {
+            // Handle PDF files
+            text = await readPdfFile(file);
+        } else if (fileName.endsWith('.json')) {
+            // Handle JSON files
+            const jsonText = await readTextFile(file);
+            try {
+                const jsonData = JSON.parse(jsonText);
+                // Check if it's a SillyTavern lorebook
+                if (jsonData.entries) {
+                    // This is a lorebook file, offer to import it instead
+                    if (confirm('This appears to be a SillyTavern lorebook file. Would you like to import it as a lorebook instead?')) {
+                        // Create a new File object and trigger import
+                        const blob = new Blob([jsonText], { type: 'application/json' });
+                        const newFile = new File([blob], file.name, { type: 'application/json' });
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(newFile);
+                        document.getElementById('importFile').files = dataTransfer.files;
+                        handleImport({ target: document.getElementById('importFile') });
+                        fileNameDisplay.textContent = '';
+                        event.target.value = '';
+                        return;
+                    }
+                }
+                // Otherwise, use as pretty-printed JSON text
+                text = JSON.stringify(jsonData, null, 2);
+            } catch (e) {
+                // If not valid JSON, use raw text
+                text = jsonText;
+            }
+        } else if (fileName.endsWith('.doc') || fileName.endsWith('.docx')) {
+            // For Word documents, we'll extract what we can
+            showStatus('⚠️ Word document support is limited. For best results, please save as TXT or PDF first.', 'info');
+            text = await readTextFile(file);
+        } else {
+            throw new Error('Unsupported file format. Please use TXT, PDF, JSON, MD, or Word files.');
+        }
+
+        if (text.trim()) {
+            document.getElementById('sourceText').value = text;
+            fileNameDisplay.textContent = `✓ Loaded: ${file.name}`;
+            showStatus(`✅ Successfully loaded content from ${file.name}`, 'success');
+        } else {
+            throw new Error('No text content could be extracted from the file.');
+        }
+    } catch (error) {
+        fileNameDisplay.textContent = `✗ Failed to load: ${file.name}`;
+        showStatus(`❌ Error loading file: ${error.message}`, 'error');
+        console.error('File upload error:', error);
+    } finally {
+        setLoading(false);
+        // Reset file input
+        event.target.value = '';
+    }
+}
+
+// Read text file
+function readTextFile(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = (e) => reject(new Error('Failed to read file'));
+        reader.readAsText(file);
+    });
+}
+
+// Read PDF file using PDF.js
+async function readPdfFile(file) {
+    if (typeof pdfjsLib === 'undefined') {
+        throw new Error('PDF library not loaded. Please refresh the page and try again.');
+    }
+
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    
+    let fullText = '';
+    
+    // Extract text from each page
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(item => item.str).join(' ');
+        fullText += pageText + '\n\n';
+    }
+    
+    return fullText.trim();
+}
+
