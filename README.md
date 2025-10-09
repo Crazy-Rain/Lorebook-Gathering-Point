@@ -19,6 +19,8 @@ A web-based interface for creating SillyTavern-compatible lorebooks using AI ass
 
 📚 **Troubleshooting HTTPS Proxies?** See [TROUBLESHOOTING_HTTPS_PROXIES.md](TROUBLESHOOTING_HTTPS_PROXIES.md) for detailed guidance on connecting to proxy services like `https://anas-proxy.xyz/v1`.
 
+🚀 **Having CORS/Firewall Issues?** Use the built-in proxy server! See [PROXY_SERVER.md](PROXY_SERVER.md) for details. Quick start: `npm install && npm start`
+
 ### Basic Usage
 
 ⚠️ **IMPORTANT**: You must run this tool via a web server for API connections to work.
