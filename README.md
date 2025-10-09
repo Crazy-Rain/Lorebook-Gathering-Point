@@ -15,6 +15,8 @@ A web-based interface for creating SillyTavern-compatible lorebooks using AI ass
 
 ## Getting Started
 
+⚠️ **IMPORTANT**: You must run this tool via a web server for API connections to work. See [SETUP.md](SETUP.md) for complete setup instructions.
+
 ### Basic Usage
 
 ⚠️ **IMPORTANT**: You must run this tool via a web server for API connections to work.
@@ -138,6 +140,21 @@ This test utility helps you:
 - Distinguish between CORS issues, network errors, and API errors
 - Test both /models and /chat/completions endpoints
 - Get specific error messages with troubleshooting steps
+
+**What to expect when testing:**
+
+- ✅ **Valid API with correct key**: "API connection successful!" with response details
+- ✅ **Valid API with invalid key**: "Server is reachable! Authentication failed" (401/403) - This is good! It means the connection is working.
+- ⚠️ **Valid URL but unsupported endpoint**: 404 error with suggestions to check URL format
+- ⚠️ **Invalid model name**: 400 error with note that connection is working
+- ❌ **Network/CORS error**: Detailed error with suggestions about web server setup and CORS configuration
+- ❌ **Invalid URL**: URL format validation error
+
+**Example: Testing with a proxy service**
+- URL: `https://anas-proxy.xyz/v1`
+- Model: `claude-sonnet-4-5-20250929`
+- Expected: Even without a valid API key, you should get a 401/403 response (not a connection error)
+- If you get a connection error instead, check that you're running via a web server (not file://)
 
 ### API Connection Issues
 
