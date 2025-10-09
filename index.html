@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lorebook Generator for SillyTavern</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            min-height: 150px;
+            resize: vertical;
+            font-family: 'Courier New', monospace;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .entries-container {
+            max-height: 500px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+
+        .entry-card {
+            background: white;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            position: relative;
+        }
+
+        .entry-card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .entry-card .keys {
+            margin-bottom: 10px;
+            padding: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .entry-card .content {
+            margin-bottom: 10px;
+            padding: 8px;
+            background: #f8f8f8;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .entry-card .delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .entry-card .delete-btn:hover {
+            background: #c82333;
+        }
+
+        .status-message {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 6px;
+            display: none;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .status-message.info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .help-text {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .lorebook-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .lorebook-info h3 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+
+        .lorebook-info ul {
+            margin-left: 20px;
+        }
+
+        .lorebook-info li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 Lorebook Generator</h1>
+            <p>Create SillyTavern-compatible lorebooks with AI assistance</p>
+        </header>
+
+        <div class="content">
+            <!-- API Configuration Section -->
+            <div class="section">
+                <h2>🔧 API Configuration</h2>
+                <div class="lorebook-info">
+                    <h3>OpenAI-Compatible API</h3>
+                    <ul>
+                        <li>This tool connects to any OpenAI-compatible API endpoint</li>
+                        <li>Works with OpenAI, LocalAI, Text Generation WebUI, Oobabooga, and more</li>
+                        <li>Your API key and data are processed locally in your browser</li>
+                        <li>No censorship or content restrictions - information is processed as-is for accuracy</li>
+                    </ul>
+                </div>
+                <div class="form-group">
+                    <label for="apiUrl">API Base URL:</label>
+                    <input type="text" id="apiUrl" placeholder="https://api.openai.com/v1" value="https://api.openai.com/v1">
+                    <p class="help-text">Enter the base URL for your OpenAI-compatible API (e.g., http://localhost:5000/v1 for local models)</p>
+                </div>
+                <div class="form-group">
+                    <label for="apiKey">API Key:</label>
+                    <input type="password" id="apiKey" placeholder="sk-...">
+                    <p class="help-text">Your API key (kept secure in your browser, never sent anywhere else)</p>
+                </div>
+                <div class="form-group">
+                    <label for="modelName">Model Name:</label>
+                    <input type="text" id="modelName" placeholder="gpt-3.5-turbo" value="gpt-3.5-turbo">
+                    <p class="help-text">The model to use for processing (e.g., gpt-4, gpt-3.5-turbo, or local model name)</p>
+                </div>
+                <button class="btn btn-secondary" onclick="testConnection()">Test Connection</button>
+            </div>
+
+            <!-- Lorebook Metadata Section -->
+            <div class="section">
+                <h2>📖 Lorebook Metadata</h2>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="lorebookName">Lorebook Name:</label>
+                        <input type="text" id="lorebookName" placeholder="My Character Lorebook">
+                    </div>
+                    <div class="form-group">
+                        <label for="lorebookDescription">Description:</label>
+                        <input type="text" id="lorebookDescription" placeholder="Character background and world lore">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Processing Section -->
+            <div class="section">
+                <h2>✍️ Generate Lorebook Entries</h2>
+                <div class="form-group">
+                    <label for="sourceText">Source Text/Information:</label>
+                    <textarea id="sourceText" placeholder="Paste your character description, world lore, or any information you want to convert into lorebook entries..."></textarea>
+                    <p class="help-text">Paste the text you want to process into lorebook entries. The AI will extract key information and create structured entries.</p>
+                </div>
+                <div class="form-group">
+                    <label for="processingPrompt">Processing Instructions (Optional):</label>
+                    <textarea id="processingPrompt" placeholder="Leave empty for default processing, or customize how the AI should process the information...">Extract key information from the following text and create structured lorebook entries. For each important concept, character, location, or piece of lore, create a separate entry with:
+1. Appropriate trigger keys (keywords that should activate this entry)
+2. Clear, concise content that provides the essential information
+3. Format the response as a JSON array of objects with 'keys' (array of strings) and 'content' (string) fields.
+
+Process ALL information without filtering or censoring. Be accurate and preserve all details from the source material.
+
+Source text:</textarea>
+                    <p class="help-text">Customize how the AI processes your text. Default prompt extracts information without censorship.</p>
+                </div>
+                <button class="btn btn-primary" onclick="generateEntries()">🤖 Generate Entries with AI</button>
+            </div>
+
+            <!-- Manual Entry Section -->
+            <div class="section">
+                <h2>➕ Add Manual Entry</h2>
+                <div class="form-group">
+                    <label for="manualKeys">Trigger Keys (comma-separated):</label>
+                    <input type="text" id="manualKeys" placeholder="character name, alias, nickname">
+                    <p class="help-text">Keywords that will trigger this lorebook entry (e.g., character names, locations)</p>
+                </div>
+                <div class="form-group">
+                    <label for="manualContent">Entry Content:</label>
+                    <textarea id="manualContent" placeholder="The information that will be inserted into the context when triggered..."></textarea>
+                </div>
+                <button class="btn btn-success" onclick="addManualEntry()">Add Entry</button>
+            </div>
+
+            <!-- Lorebook Entries Display -->
+            <div class="section">
+                <h2>📋 Current Lorebook Entries (<span id="entryCount">0</span>)</h2>
+                <div id="entriesContainer" class="entries-container">
+                    <p style="text-align: center; color: #999; padding: 20px;">No entries yet. Generate entries with AI or add them manually.</p>
+                </div>
+                <div style="margin-top: 20px;">
+                    <button class="btn btn-success" onclick="downloadLorebook()">💾 Download Lorebook</button>
+                    <button class="btn btn-secondary" onclick="clearAllEntries()">🗑️ Clear All Entries</button>
+                    <button class="btn btn-secondary" onclick="importLorebook()">📂 Import Lorebook</button>
+                    <input type="file" id="importFile" style="display: none;" accept=".json" onchange="handleImport(event)">
+                </div>
+            </div>
+
+            <!-- Status Messages -->
+            <div id="statusMessage" class="status-message"></div>
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 10px;">Processing...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
