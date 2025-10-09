@@ -319,8 +319,11 @@
                 </div>
                 <div class="form-group">
                     <label for="modelName">Model Name:</label>
-                    <input type="text" id="modelName" placeholder="gpt-3.5-turbo" value="gpt-3.5-turbo">
-                    <p class="help-text">The model to use for processing (e.g., gpt-4, gpt-3.5-turbo, or local model name)</p>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="modelName" placeholder="gpt-3.5-turbo" value="gpt-3.5-turbo" style="flex: 1;">
+                        <button class="btn btn-secondary" id="refreshModelsBtn" onclick="fetchAvailableModels()" style="white-space: nowrap;">🔄 Refresh Models</button>
+                    </div>
+                    <p class="help-text">The model to use for processing (e.g., gpt-4, gpt-3.5-turbo, or local model name). Click "Refresh Models" to auto-detect available models.</p>
                 </div>
                 <button class="btn btn-secondary" onclick="testConnection()">Test Connection</button>
             </div>
