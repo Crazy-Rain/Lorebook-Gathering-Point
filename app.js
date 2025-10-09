@@ -107,17 +107,55 @@ async function testConnection() {
         // Check if this is a network/CORS error
         if (error.name === 'TypeError' && error.message.includes('fetch')) {
             console.error('Network or CORS error detected:', error);
-            errorMessage = 'Connection Error: Unable to reach the API endpoint.\n\n' +
-                          'This could be due to:\n' +
-                          '• CORS not configured on the server (common with local APIs)\n' +
-                          '  → If running locally, open index.html via a web server (http://localhost), not file://\n' +
-                          '  → Configure CORS headers on your API server\n' +
-                          '• Server not running or not accessible\n' +
-                          '• Firewall blocking the connection\n' +
-                          '• Wrong API URL (check for typos)\n\n' +
-                          'If this works in SillyTavern:\n' +
-                          '• Make sure you\'re accessing this tool via http:// (not file://)\n' +
-                          '• Check your API server CORS settings allow this origin';
+            
+            // Try to provide more specific guidance based on the URL
+            const isHttps = apiUrl.toLowerCase().startsWith('https://');
+            const isLocalhost = apiUrl.includes('localhost') || apiUrl.includes('127.0.0.1');
+            
+            errorMessage = 'Connection Error: Unable to reach the API endpoint.\n\n';
+            
+            if (isHttps && !isLocalhost) {
+                // HTTPS endpoint (like a proxy)
+                errorMessage += 'For HTTPS endpoints (like proxies):\n' +
+                              '• Browser or browser extension (ad blocker) may be blocking the request\n' +
+                              '  → Try disabling ad blockers/privacy extensions temporarily\n' +
+                              '  → Check browser console (F12) for specific error details\n' +
+                              '• CORS may not be configured on the proxy server\n' +
+                              '  → Some proxies require specific CORS configuration\n' +
+                              '• Server may be temporarily unavailable\n' +
+                              '  → Verify the URL is correct and the service is online\n\n' +
+                              'If this works in SillyTavern but not here:\n' +
+                              '• SillyTavern may have a proxy/backend that handles CORS\n' +
+                              '• Check that you\'re accessing this tool via http:// (not file://)\n' +
+                              '• Try accessing the API URL directly in your browser to verify it responds\n' +
+                              '• Some proxy services may require additional headers or authentication\n\n' +
+                              '💡 Tip: Press F12 to open browser console and look for detailed error messages';
+            } else if (isLocalhost) {
+                // Local API
+                errorMessage += 'For local APIs:\n' +
+                              '• CORS must be enabled on your local API server\n' +
+                              '  → Configure CORS headers on your API server\n' +
+                              '  → Add this origin to allowed origins: ' + window.location.origin + '\n' +
+                              '• Server may not be running\n' +
+                              '  → Verify your API server is started and accessible\n' +
+                              '• Wrong port or URL\n' +
+                              '  → Check that the port number is correct\n\n' +
+                              'Important: You must access this tool via http://localhost (not file://)\n' +
+                              'Current access method: ' + window.location.protocol + '//' + window.location.host;
+            } else {
+                // Other cases
+                errorMessage += 'This could be due to:\n' +
+                              '• CORS not configured on the server\n' +
+                              '  → If running locally, access via http://localhost, not file://\n' +
+                              '  → Configure CORS headers on your API server\n' +
+                              '• Server not running or not accessible\n' +
+                              '• Firewall or browser blocking the connection\n' +
+                              '• Wrong API URL (check for typos)\n\n' +
+                              'If this works in SillyTavern:\n' +
+                              '• Make sure you\'re accessing this tool via http:// (not file://)\n' +
+                              '• Check your API server CORS settings allow this origin\n' +
+                              '• Try disabling browser extensions temporarily';
+            }
         }
         
         showStatus(`❌ Connection failed: ${errorMessage}`, 'error');

@@ -154,7 +154,10 @@ This test utility helps you:
 - URL: `https://anas-proxy.xyz/v1`
 - Model: `claude-sonnet-4-5-20250929`
 - Expected: Even without a valid API key, you should get a 401/403 response (not a connection error)
-- If you get a connection error instead, check that you're running via a web server (not file://)
+- If you get a connection error instead:
+  - Check browser console (F12) for `ERR_BLOCKED_BY_CLIENT` (ad blocker interference)
+  - Try disabling browser extensions temporarily
+  - Verify you're running via a web server (not file://)
 
 ### API Connection Issues
 
@@ -178,8 +181,19 @@ This test utility helps you:
   - Verify the server is running and accessible
   - Check that the API URL ends with `/v1` (e.g., `http://localhost:5000/v1`)
 
+- **For HTTPS Proxy Services** (like `https://anas-proxy.xyz/v1`):
+  - **Browser extensions** (ad blockers, privacy tools) may block requests
+    - Try disabling extensions temporarily
+    - Check browser console (F12) for `ERR_BLOCKED_BY_CLIENT`
+  - Some proxies only support server-to-server requests, not browser-based access
+  - If it works in SillyTavern but not here:
+    - SillyTavern routes through its backend (avoids browser CORS restrictions)
+    - Browser-based tools have stricter security constraints
+
 - **Works in SillyTavern but not here?**
   - Check that you're accessing this tool via http:// not file://
+  - Try disabling browser extensions (ad blockers, privacy tools)
+  - Press F12 to check browser console for specific error messages
   - Verify CORS is configured to allow this origin on your API server
   - Some API servers allow specific origins - you may need to add localhost
 

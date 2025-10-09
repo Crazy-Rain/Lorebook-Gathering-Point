@@ -71,6 +71,7 @@ Choose the endpoint that matches your setup:
 - URL: `https://anas-proxy.xyz/v1` (or other Claude proxy)
 - API Key: Your proxy API key
 - Model: `claude-sonnet-4-5-20250929`, `claude-3-opus-20240229`, etc.
+- ⚠️ **Note**: Browser extensions (ad blockers) may interfere with HTTPS proxies. If connection fails, try disabling extensions and check browser console (F12).
 
 **Local Models**
 - **LM Studio**: 
