@@ -369,10 +369,10 @@
                     <div style="margin-top: 10px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                         <button class="btn btn-secondary" onclick="browseSourceFile()">📁 Browse Files</button>
                         <button class="btn btn-secondary" onclick="clearSourceText()">🗑️ Clear Text</button>
-                        <input type="file" id="sourceFileInput" style="display: none;" accept=".txt,.pdf,.json,.doc,.docx,.md" multiple onchange="handleSourceFileUpload(event)">
+                        <input type="file" id="sourceFileInput" style="display: none;" accept=".txt,.pdf,.json,.md" multiple onchange="handleSourceFileUpload(event)">
                         <span id="fileNameDisplay" style="color: #666; font-style: italic;"></span>
                     </div>
-                    <p class="help-text" style="margin-top: 5px;">Supported formats: TXT, PDF, JSON, Word (.doc/.docx), Markdown (.md)</p>
+                    <p class="help-text" style="margin-top: 5px;">Supported formats: TXT, PDF, JSON, Markdown (.md)</p>
                 </div>
                 <div class="form-group">
                     <label for="processingPrompt">Processing Instructions (Optional):</label>

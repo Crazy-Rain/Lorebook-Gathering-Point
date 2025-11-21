@@ -441,7 +441,13 @@ function convertToEntries() {
             return;
         }
         
-        showStatus(`✅ Successfully added ${addedCount} lorebook entries!`, 'success');
+        // Inform user about skipped entries
+        const skippedCount = entries.length - addedCount;
+        let statusMsg = `✅ Successfully added ${addedCount} lorebook entries!`;
+        if (skippedCount > 0) {
+            statusMsg += ` (${skippedCount} ${skippedCount === 1 ? 'entry' : 'entries'} skipped due to missing or invalid data - check browser console for details)`;
+        }
+        showStatus(statusMsg, skippedCount > 0 ? 'info' : 'success');
         
         // Clear the AI response and hide the section
         clearAiResponse();
@@ -737,6 +743,25 @@ async function handleSourceFileUpload(event) {
     const files = Array.from(event.target.files);
     if (files.length === 0) return;
 
+    // File size validation
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB per file
+    const MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50MB total
+    
+    const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+    const oversizedFiles = files.filter(file => file.size > MAX_FILE_SIZE);
+    
+    if (totalSize > MAX_TOTAL_SIZE) {
+        showStatus(`❌ Total file size (${(totalSize / 1024 / 1024).toFixed(2)}MB) exceeds the maximum allowed (${MAX_TOTAL_SIZE / 1024 / 1024}MB). Please select fewer or smaller files.`, 'error');
+        event.target.value = '';
+        return;
+    }
+    
+    if (oversizedFiles.length > 0) {
+        showStatus(`❌ Some files exceed the maximum size limit (${MAX_FILE_SIZE / 1024 / 1024}MB): ${oversizedFiles.map(f => f.name).join(', ')}`, 'error');
+        event.target.value = '';
+        return;
+    }
+
     const fileNameDisplay = document.getElementById('fileNameDisplay');
     fileNameDisplay.textContent = `Loading ${files.length} file(s)...`;
     
@@ -749,6 +774,8 @@ async function handleSourceFileUpload(event) {
 
         // Process each file
         for (const file of files) {
+            // Show progress
+            fileNameDisplay.textContent = `Processing ${processedFiles.length + failedFiles.length + 1} of ${files.length}: ${file.name}...`;
             try {
                 let text = '';
                 const fileName = file.name.toLowerCase();
@@ -777,13 +804,23 @@ async function handleSourceFileUpload(event) {
                         text = jsonText;
                     }
                 } else if (fileName.endsWith('.doc') || fileName.endsWith('.docx')) {
-                    text = await readTextFile(file);
+                    // Word documents require special handling and are not supported
+                    failedFiles.push({ 
+                        name: file.name, 
+                        reason: 'Word documents (.doc/.docx) are not supported. Please save as .txt or .pdf first.' 
+                    });
+                    continue;
                 } else {
                     throw new Error('Unsupported file format');
                 }
 
                 if (text.trim()) {
-                    allText.push(`=== Content from: ${file.name} ===\n\n${text}`);
+                    // Add proper spacing between files
+                    if (allText.length > 0) {
+                        allText.push(`\n\n=== Content from: ${file.name} ===\n\n${text}`);
+                    } else {
+                        allText.push(`=== Content from: ${file.name} ===\n\n${text}`);
+                    }
                     processedFiles.push(file.name);
                 } else {
                     failedFiles.push({ name: file.name, reason: 'No text content extracted' });
@@ -796,7 +833,7 @@ async function handleSourceFileUpload(event) {
         // Combine all text
         if (allText.length > 0) {
             const currentText = document.getElementById('sourceText').value.trim();
-            const newContent = allText.join('\n\n');
+            const newContent = allText.join('');
             const combinedText = currentText ? currentText + '\n\n' + newContent : newContent;
             document.getElementById('sourceText').value = combinedText;
             
@@ -843,19 +880,30 @@ async function readPdfFile(file) {
         throw new Error('PDF library not loaded. Please refresh the page and try again.');
     }
 
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    
-    let fullText = '';
-    
-    // Extract text from each page
-    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-        const page = await pdf.getPage(pageNum);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items.map(item => item.str).join(' ');
-        fullText += pageText + '\n\n';
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        
+        let fullText = '';
+        
+        // Extract text from each page
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            const page = await pdf.getPage(pageNum);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map(item => item.str).join(' ');
+            fullText += pageText + '\n\n';
+        }
+        
+        if (!fullText.trim()) {
+            throw new Error('PDF appears to be empty or contains only images/scanned content.');
+        }
+        
+        return fullText.trim();
+    } catch (error) {
+        if (error.message && error.message.includes('Invalid PDF')) {
+            throw new Error('Invalid or corrupted PDF file.');
+        }
+        throw error;
     }
-    
-    return fullText.trim();
 }
 
