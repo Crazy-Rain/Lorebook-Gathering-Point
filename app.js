@@ -319,10 +319,12 @@ async function generateEntries() {
         
         // Try to extract JSON from the response with improved handling
         let jsonContent;
-        let parsedContent;
         try {
             // Try direct parsing first
-            parsedContent = JSON.parse(content);
+            const parsed = JSON.parse(content);
+            if (!Array.isArray(parsed)) {
+                throw new Error('Content is valid JSON but not an array of entries.');
+            }
             jsonContent = content;
         } catch (e) {
             // Try to extract JSON from markdown code blocks
@@ -339,17 +341,15 @@ async function generateEntries() {
                 }
             }
             
-            // Parse the extracted content
+            // Parse and validate the extracted content
             try {
-                parsedContent = JSON.parse(jsonContent);
+                const parsed = JSON.parse(jsonContent);
+                if (!Array.isArray(parsed)) {
+                    throw new Error('Extracted content is valid JSON but not an array of entries.');
+                }
             } catch (parseError) {
                 throw new Error('Could not extract valid JSON from API response. Please check the processing instructions or try again.');
             }
-        }
-
-        // Validate the parsed content is an array
-        if (!Array.isArray(parsedContent)) {
-            throw new Error('Extracted content is valid JSON but not an array of entries.');
         }
 
         // Display the AI response in the review text box
@@ -783,7 +783,9 @@ async function handleSourceFileUpload(event) {
                 }
 
                 if (text.trim()) {
-                    allText.push(`\n\n=== Content from: ${file.name} ===\n\n${text}`);
+                    // Add separator for clarity (leading newlines will be handled during combination)
+                    const separator = allText.length > 0 ? '\n\n' : '';
+                    allText.push(`${separator}=== Content from: ${file.name} ===\n\n${text}`);
                     processedFiles.push(file.name);
                 } else {
                     failedFiles.push({ name: file.name, reason: 'No text content extracted' });
