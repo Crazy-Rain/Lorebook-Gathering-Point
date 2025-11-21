@@ -796,8 +796,8 @@ async function handleSourceFileUpload(event) {
         // Combine all text
         if (allText.length > 0) {
             const currentText = document.getElementById('sourceText').value.trim();
-            const newContent = allText.join('');
-            const combinedText = currentText ? currentText + newContent : newContent.trim();
+            const newContent = allText.join('').trim();
+            const combinedText = currentText ? currentText + '\n\n' + newContent : newContent;
             document.getElementById('sourceText').value = combinedText;
             
             let statusMsg = `✅ Successfully loaded ${processedFiles.length} file(s): ${processedFiles.join(', ')}`;
