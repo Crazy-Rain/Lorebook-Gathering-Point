@@ -4,7 +4,16 @@ let lorebookEntries = [];
 // Show status message
 function showStatus(message, type = 'info') {
     const statusEl = document.getElementById('statusMessage');
-    statusEl.textContent = message;
+    // Convert line breaks to <br> tags for proper HTML rendering
+    // Also escape any HTML to prevent XSS while preserving line breaks
+    const escapedMessage = message
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+        .replace(/\n/g, '<br>');
+    statusEl.innerHTML = escapedMessage;
     statusEl.className = `status-message ${type}`;
     statusEl.style.display = 'block';
     
