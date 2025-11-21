@@ -783,9 +783,7 @@ async function handleSourceFileUpload(event) {
                 }
 
                 if (text.trim()) {
-                    // Add separator for clarity (leading newlines will be handled during combination)
-                    const separator = allText.length > 0 ? '\n\n' : '';
-                    allText.push(`${separator}=== Content from: ${file.name} ===\n\n${text}`);
+                    allText.push(`=== Content from: ${file.name} ===\n\n${text}`);
                     processedFiles.push(file.name);
                 } else {
                     failedFiles.push({ name: file.name, reason: 'No text content extracted' });
@@ -798,7 +796,7 @@ async function handleSourceFileUpload(event) {
         // Combine all text
         if (allText.length > 0) {
             const currentText = document.getElementById('sourceText').value.trim();
-            const newContent = allText.join('').trim();
+            const newContent = allText.join('\n\n');
             const combinedText = currentText ? currentText + '\n\n' + newContent : newContent;
             document.getElementById('sourceText').value = combinedText;
             
