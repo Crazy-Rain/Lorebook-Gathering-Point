@@ -366,10 +366,11 @@
                     <label for="sourceText">Source Text/Information:</label>
                     <textarea id="sourceText" placeholder="Paste your character description, world lore, or any information you want to convert into lorebook entries..."></textarea>
                     <p class="help-text">Paste the text you want to process into lorebook entries. The AI will extract key information and create structured entries.</p>
-                    <div style="margin-top: 10px;">
+                    <div style="margin-top: 10px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                         <button class="btn btn-secondary" onclick="browseSourceFile()">📁 Browse Files</button>
-                        <input type="file" id="sourceFileInput" style="display: none;" accept=".txt,.pdf,.json,.doc,.docx,.md" onchange="handleSourceFileUpload(event)">
-                        <span id="fileNameDisplay" style="margin-left: 10px; color: #666; font-style: italic;"></span>
+                        <button class="btn btn-secondary" onclick="clearSourceText()">🗑️ Clear Text</button>
+                        <input type="file" id="sourceFileInput" style="display: none;" accept=".txt,.pdf,.json,.doc,.docx,.md" multiple onchange="handleSourceFileUpload(event)">
+                        <span id="fileNameDisplay" style="color: #666; font-style: italic;"></span>
                     </div>
                     <p class="help-text" style="margin-top: 5px;">Supported formats: TXT, PDF, JSON, Word (.doc/.docx), Markdown (.md)</p>
                 </div>

@@ -305,23 +305,54 @@ async function generateEntries() {
         }
 
         const data = await response.json();
+        
+        // Validate API response structure
+        if (!data || !data.choices || !data.choices[0] || !data.choices[0].message) {
+            throw new Error('Invalid API response structure. Please check your API configuration.');
+        }
+
         const content = data.choices[0].message.content;
         
-        // Try to extract JSON from the response
+        if (!content || !content.trim()) {
+            throw new Error('API returned empty content. Please try again or adjust your prompt.');
+        }
+        
+        // Try to extract JSON from the response with improved handling
         let jsonContent;
         try {
             // Try direct parsing first
             JSON.parse(content);
             jsonContent = content;
         } catch (e) {
-            // Try to extract JSON from markdown code blocks or text
-            const jsonMatch = content.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/) || 
-                            content.match(/(\[[\s\S]*\])/);
-            if (jsonMatch) {
-                jsonContent = jsonMatch[1];
+            // Try to extract JSON from markdown code blocks
+            const codeBlockMatch = content.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/);
+            if (codeBlockMatch) {
+                jsonContent = codeBlockMatch[1];
             } else {
-                throw new Error('Could not parse JSON from API response. Please check the processing instructions or try again.');
+                // Try to find any JSON array in the text
+                const jsonArrayMatch = content.match(/\[[\s\S]*?\]/);
+                if (jsonArrayMatch) {
+                    try {
+                        // Validate it's actually parseable
+                        JSON.parse(jsonArrayMatch[0]);
+                        jsonContent = jsonArrayMatch[0];
+                    } catch (parseError) {
+                        throw new Error('Could not extract valid JSON from API response. Please check the processing instructions or try again.');
+                    }
+                } else {
+                    throw new Error('No JSON array found in API response. Please ensure your processing instructions ask for JSON output.');
+                }
             }
+        }
+
+        // Validate the extracted JSON is an array
+        try {
+            const testParse = JSON.parse(jsonContent);
+            if (!Array.isArray(testParse)) {
+                throw new Error('Extracted content is valid JSON but not an array of entries.');
+            }
+        } catch (e) {
+            throw new Error(`Invalid JSON format: ${e.message}`);
         }
 
         // Display the AI response in the review text box
@@ -383,14 +414,29 @@ function convertToEntries() {
             throw new Error('Response is not an array of entries');
         }
         
-        // Add entries to the lorebook
+        // Add entries to the lorebook with better validation
         let addedCount = 0;
-        entries.forEach(entry => {
-            if (entry.keys && entry.content) {
-                const keys = Array.isArray(entry.keys) ? entry.keys : [entry.keys];
-                addEntry(keys, entry.content);
-                addedCount++;
+        entries.forEach((entry, index) => {
+            if (!entry.keys || !entry.content) {
+                console.warn(`Entry ${index + 1} missing required fields:`, entry);
+                return; // Skip this entry
             }
+            
+            const keys = Array.isArray(entry.keys) ? entry.keys : [entry.keys];
+            const validKeys = keys.filter(k => k && k.trim());
+            
+            if (validKeys.length === 0) {
+                console.warn(`Entry ${index + 1} has no valid keys:`, entry);
+                return;
+            }
+            
+            if (!entry.content.trim()) {
+                console.warn(`Entry ${index + 1} has empty content:`, entry);
+                return;
+            }
+            
+            addEntry(validKeys, entry.content);
+            addedCount++;
         });
         
         if (addedCount === 0) {
@@ -689,77 +735,98 @@ function browseSourceFile() {
     document.getElementById('sourceFileInput').click();
 }
 
-// Handle source file upload
+// Handle source file upload (supports multiple files)
 async function handleSourceFileUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+    const files = Array.from(event.target.files);
+    if (files.length === 0) return;
 
     const fileNameDisplay = document.getElementById('fileNameDisplay');
-    fileNameDisplay.textContent = `Loading: ${file.name}...`;
+    fileNameDisplay.textContent = `Loading ${files.length} file(s)...`;
     
     setLoading(true);
 
     try {
-        let text = '';
-        const fileName = file.name.toLowerCase();
+        const allText = [];
+        const processedFiles = [];
+        const failedFiles = [];
 
-        if (fileName.endsWith('.txt') || fileName.endsWith('.md')) {
-            // Handle plain text and markdown files
-            text = await readTextFile(file);
-        } else if (fileName.endsWith('.pdf')) {
-            // Handle PDF files
-            text = await readPdfFile(file);
-        } else if (fileName.endsWith('.json')) {
-            // Handle JSON files
-            const jsonText = await readTextFile(file);
+        // Process each file
+        for (const file of files) {
             try {
-                const jsonData = JSON.parse(jsonText);
-                // Check if it's a SillyTavern lorebook
-                if (jsonData.entries) {
-                    // This is a lorebook file, offer to import it instead
-                    if (confirm('This appears to be a SillyTavern lorebook file. Would you like to import it as a lorebook instead?')) {
-                        // Create a new File object and trigger import
-                        const blob = new Blob([jsonText], { type: 'application/json' });
-                        const newFile = new File([blob], file.name, { type: 'application/json' });
-                        const dataTransfer = new DataTransfer();
-                        dataTransfer.items.add(newFile);
-                        document.getElementById('importFile').files = dataTransfer.files;
-                        handleImport({ target: document.getElementById('importFile') });
-                        fileNameDisplay.textContent = '';
-                        event.target.value = '';
-                        return;
+                let text = '';
+                const fileName = file.name.toLowerCase();
+
+                if (fileName.endsWith('.txt') || fileName.endsWith('.md')) {
+                    text = await readTextFile(file);
+                } else if (fileName.endsWith('.pdf')) {
+                    text = await readPdfFile(file);
+                } else if (fileName.endsWith('.json')) {
+                    const jsonText = await readTextFile(file);
+                    try {
+                        const jsonData = JSON.parse(jsonText);
+                        if (jsonData.entries) {
+                            if (confirm(`${file.name} appears to be a SillyTavern lorebook file. Would you like to import it as a lorebook instead?`)) {
+                                const blob = new Blob([jsonText], { type: 'application/json' });
+                                const newFile = new File([blob], file.name, { type: 'application/json' });
+                                const dataTransfer = new DataTransfer();
+                                dataTransfer.items.add(newFile);
+                                document.getElementById('importFile').files = dataTransfer.files;
+                                handleImport({ target: document.getElementById('importFile') });
+                                continue;
+                            }
+                        }
+                        text = JSON.stringify(jsonData, null, 2);
+                    } catch (e) {
+                        text = jsonText;
                     }
+                } else if (fileName.endsWith('.doc') || fileName.endsWith('.docx')) {
+                    text = await readTextFile(file);
+                } else {
+                    throw new Error('Unsupported file format');
                 }
-                // Otherwise, use as pretty-printed JSON text
-                text = JSON.stringify(jsonData, null, 2);
-            } catch (e) {
-                // If not valid JSON, use raw text
-                text = jsonText;
+
+                if (text.trim()) {
+                    allText.push(`\n\n=== Content from: ${file.name} ===\n\n${text}`);
+                    processedFiles.push(file.name);
+                } else {
+                    failedFiles.push({ name: file.name, reason: 'No text content extracted' });
+                }
+            } catch (error) {
+                failedFiles.push({ name: file.name, reason: error.message });
             }
-        } else if (fileName.endsWith('.doc') || fileName.endsWith('.docx')) {
-            // For Word documents, we'll extract what we can
-            showStatus('⚠️ Word document support is limited. For best results, please save as TXT or PDF first.', 'info');
-            text = await readTextFile(file);
-        } else {
-            throw new Error('Unsupported file format. Please use TXT, PDF, JSON, MD, or Word files.');
         }
 
-        if (text.trim()) {
-            document.getElementById('sourceText').value = text;
-            fileNameDisplay.textContent = `✓ Loaded: ${file.name}`;
-            showStatus(`✅ Successfully loaded content from ${file.name}`, 'success');
+        // Combine all text
+        if (allText.length > 0) {
+            const currentText = document.getElementById('sourceText').value.trim();
+            const combinedText = currentText ? currentText + allText.join('') : allText.join('').trim();
+            document.getElementById('sourceText').value = combinedText;
+            
+            let statusMsg = `✅ Successfully loaded ${processedFiles.length} file(s): ${processedFiles.join(', ')}`;
+            if (failedFiles.length > 0) {
+                statusMsg += `\n⚠️ Failed to load ${failedFiles.length} file(s): ${failedFiles.map(f => `${f.name} (${f.reason})`).join(', ')}`;
+            }
+            
+            fileNameDisplay.textContent = `✓ Loaded ${processedFiles.length} of ${files.length} file(s)`;
+            showStatus(statusMsg, failedFiles.length > 0 ? 'info' : 'success');
         } else {
-            throw new Error('No text content could be extracted from the file.');
+            throw new Error('No text content could be extracted from any of the files.');
         }
     } catch (error) {
-        fileNameDisplay.textContent = `✗ Failed to load: ${file.name}`;
-        showStatus(`❌ Error loading file: ${error.message}`, 'error');
+        fileNameDisplay.textContent = `✗ Failed to load files`;
+        showStatus(`❌ Error loading files: ${error.message}`, 'error');
         console.error('File upload error:', error);
     } finally {
         setLoading(false);
-        // Reset file input
         event.target.value = '';
     }
+}
+
+// Clear source text
+function clearSourceText() {
+    document.getElementById('sourceText').value = '';
+    document.getElementById('fileNameDisplay').textContent = '';
+    showStatus('Source text cleared', 'info');
 }
 
 // Read text file
