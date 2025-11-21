@@ -4,7 +4,16 @@ let lorebookEntries = [];
 // Show status message
 function showStatus(message, type = 'info') {
     const statusEl = document.getElementById('statusMessage');
-    statusEl.textContent = message;
+    // Convert line breaks to <br> tags for proper HTML rendering
+    // Also escape any HTML to prevent XSS while preserving line breaks
+    const escapedMessage = message
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+        .replace(/\n/g, '<br>');
+    statusEl.innerHTML = escapedMessage;
     statusEl.className = `status-message ${type}`;
     statusEl.style.display = 'block';
     
@@ -305,42 +314,61 @@ async function generateEntries() {
         }
 
         const data = await response.json();
+        
+        // Validate API response structure
+        if (!data || !data.choices || !data.choices[0] || !data.choices[0].message) {
+            throw new Error('Invalid API response structure. Please check your API configuration.');
+        }
+
         const content = data.choices[0].message.content;
         
-        // Try to extract JSON from the response
-        let entries;
+        if (!content || !content.trim()) {
+            throw new Error('API returned empty content. Please try again or adjust your prompt.');
+        }
+        
+        // Try to extract JSON from the response with improved handling
+        let jsonContent;
         try {
             // Try direct parsing first
-            entries = JSON.parse(content);
+            const parsed = JSON.parse(content);
+            if (!Array.isArray(parsed)) {
+                throw new Error('Content is valid JSON but not an array of entries.');
+            }
+            jsonContent = content;
         } catch (e) {
-            // Try to extract JSON from markdown code blocks or text
-            const jsonMatch = content.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/) || 
-                            content.match(/(\[[\s\S]*\])/);
-            if (jsonMatch) {
-                entries = JSON.parse(jsonMatch[1]);
+            // Try to extract JSON from markdown code blocks
+            const codeBlockMatch = content.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/);
+            if (codeBlockMatch) {
+                jsonContent = codeBlockMatch[1];
             } else {
-                throw new Error('Could not parse JSON from API response. Please check the processing instructions or try again.');
+                // Try to find any JSON array in the text
+                const jsonArrayMatch = content.match(/\[[\s\S]*?\]/);
+                if (jsonArrayMatch) {
+                    jsonContent = jsonArrayMatch[0];
+                } else {
+                    throw new Error('No JSON array found in API response. Please ensure your processing instructions ask for JSON output.');
+                }
+            }
+            
+            // Parse and validate the extracted content
+            try {
+                const parsed = JSON.parse(jsonContent);
+                if (!Array.isArray(parsed)) {
+                    throw new Error('Extracted content is valid JSON but not an array of entries.');
+                }
+            } catch (parseError) {
+                throw new Error('Could not extract valid JSON from API response. Please check the processing instructions or try again.');
             }
         }
 
-        if (!Array.isArray(entries)) {
-            throw new Error('API response is not an array of entries');
-        }
-
-        // Add entries to the lorebook
-        let addedCount = 0;
-        entries.forEach(entry => {
-            if (entry.keys && entry.content) {
-                const keys = Array.isArray(entry.keys) ? entry.keys : [entry.keys];
-                addEntry(keys, entry.content);
-                addedCount++;
-            }
-        });
-
-        showStatus(`✅ Successfully generated and added ${addedCount} lorebook entries!`, 'success');
+        // Display the AI response in the review text box
+        document.getElementById('aiResponse').value = jsonContent;
+        document.getElementById('aiResponseSection').style.display = 'block';
         
-        // Clear source text after successful generation
-        document.getElementById('sourceText').value = '';
+        showStatus('✅ AI response received! Review the content below and click "Convert to Lorebook Entries" when ready.', 'success');
+        
+        // Scroll to the AI response section
+        document.getElementById('aiResponseSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
         
     } catch (error) {
         // Better error handling for network and API errors
@@ -373,6 +401,82 @@ async function generateEntries() {
     } finally {
         setLoading(false);
     }
+}
+
+// Convert AI response to lorebook entries
+function convertToEntries() {
+    const aiResponse = document.getElementById('aiResponse').value.trim();
+    
+    if (!aiResponse) {
+        showStatus('No AI response to convert. Generate entries with AI first.', 'error');
+        return;
+    }
+    
+    try {
+        // Parse the JSON response
+        const entries = JSON.parse(aiResponse);
+        
+        if (!Array.isArray(entries)) {
+            throw new Error('Response is not an array of entries');
+        }
+        
+        // Add entries to the lorebook with better validation
+        let addedCount = 0;
+        entries.forEach((entry, index) => {
+            if (!entry.keys || !entry.content) {
+                console.warn(`Entry ${index + 1} missing required fields:`, entry);
+                return; // Skip this entry
+            }
+            
+            const keys = Array.isArray(entry.keys) ? entry.keys : [entry.keys];
+            const validKeys = keys.filter(k => k && k.trim());
+            
+            if (validKeys.length === 0) {
+                console.warn(`Entry ${index + 1} has no valid keys:`, entry);
+                return;
+            }
+            
+            if (!entry.content.trim()) {
+                console.warn(`Entry ${index + 1} has empty content:`, entry);
+                return;
+            }
+            
+            addEntry(validKeys, entry.content);
+            addedCount++;
+        });
+        
+        if (addedCount === 0) {
+            showStatus('No valid entries found in the response. Each entry needs "keys" and "content" fields.', 'error');
+            return;
+        }
+        
+        // Inform user about skipped entries
+        const skippedCount = entries.length - addedCount;
+        let statusMsg = `✅ Successfully added ${addedCount} lorebook entries!`;
+        if (skippedCount > 0) {
+            statusMsg += ` (${skippedCount} ${skippedCount === 1 ? 'entry' : 'entries'} skipped due to missing or invalid data - check browser console for details)`;
+        }
+        showStatus(statusMsg, skippedCount > 0 ? 'info' : 'success');
+        
+        // Clear the AI response and hide the section
+        clearAiResponse();
+        
+        // Clear source text
+        document.getElementById('sourceText').value = '';
+        
+        // Scroll to entries section
+        document.getElementById('entriesContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        
+    } catch (error) {
+        showStatus(`❌ Failed to parse AI response: ${error.message}. Please ensure the response is valid JSON.`, 'error');
+        console.error('Parse error:', error);
+    }
+}
+
+// Clear AI response
+function clearAiResponse() {
+    document.getElementById('aiResponse').value = '';
+    document.getElementById('aiResponseSection').style.display = 'none';
 }
 
 // Add manual entry
@@ -643,77 +747,130 @@ function browseSourceFile() {
     document.getElementById('sourceFileInput').click();
 }
 
-// Handle source file upload
+// Handle source file upload (supports multiple files)
 async function handleSourceFileUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+    const files = Array.from(event.target.files);
+    if (files.length === 0) return;
+
+    // File size validation
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB per file
+    const MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50MB total
+    
+    const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+    const oversizedFiles = files.filter(file => file.size > MAX_FILE_SIZE);
+    
+    if (totalSize > MAX_TOTAL_SIZE) {
+        showStatus(`❌ Total file size (${(totalSize / 1024 / 1024).toFixed(2)}MB) exceeds the maximum allowed (${MAX_TOTAL_SIZE / 1024 / 1024}MB). Please select fewer or smaller files.`, 'error');
+        event.target.value = '';
+        return;
+    }
+    
+    if (oversizedFiles.length > 0) {
+        showStatus(`❌ Some files exceed the maximum size limit (${MAX_FILE_SIZE / 1024 / 1024}MB): ${oversizedFiles.map(f => f.name).join(', ')}`, 'error');
+        event.target.value = '';
+        return;
+    }
 
     const fileNameDisplay = document.getElementById('fileNameDisplay');
-    fileNameDisplay.textContent = `Loading: ${file.name}...`;
+    fileNameDisplay.textContent = `Loading ${files.length} file(s)...`;
     
     setLoading(true);
 
     try {
-        let text = '';
-        const fileName = file.name.toLowerCase();
+        const allText = [];
+        const processedFiles = [];
+        const failedFiles = [];
 
-        if (fileName.endsWith('.txt') || fileName.endsWith('.md')) {
-            // Handle plain text and markdown files
-            text = await readTextFile(file);
-        } else if (fileName.endsWith('.pdf')) {
-            // Handle PDF files
-            text = await readPdfFile(file);
-        } else if (fileName.endsWith('.json')) {
-            // Handle JSON files
-            const jsonText = await readTextFile(file);
+        // Process each file
+        for (const file of files) {
+            // Show progress
+            fileNameDisplay.textContent = `Processing ${processedFiles.length + failedFiles.length + 1} of ${files.length}: ${file.name}...`;
             try {
-                const jsonData = JSON.parse(jsonText);
-                // Check if it's a SillyTavern lorebook
-                if (jsonData.entries) {
-                    // This is a lorebook file, offer to import it instead
-                    if (confirm('This appears to be a SillyTavern lorebook file. Would you like to import it as a lorebook instead?')) {
-                        // Create a new File object and trigger import
-                        const blob = new Blob([jsonText], { type: 'application/json' });
-                        const newFile = new File([blob], file.name, { type: 'application/json' });
-                        const dataTransfer = new DataTransfer();
-                        dataTransfer.items.add(newFile);
-                        document.getElementById('importFile').files = dataTransfer.files;
-                        handleImport({ target: document.getElementById('importFile') });
-                        fileNameDisplay.textContent = '';
-                        event.target.value = '';
-                        return;
+                let text = '';
+                const fileName = file.name.toLowerCase();
+
+                if (fileName.endsWith('.txt') || fileName.endsWith('.md')) {
+                    text = await readTextFile(file);
+                } else if (fileName.endsWith('.pdf')) {
+                    text = await readPdfFile(file);
+                } else if (fileName.endsWith('.json')) {
+                    const jsonText = await readTextFile(file);
+                    try {
+                        const jsonData = JSON.parse(jsonText);
+                        if (jsonData.entries) {
+                            if (confirm(`${file.name} appears to be a SillyTavern lorebook file. Would you like to import it as a lorebook instead?`)) {
+                                const blob = new Blob([jsonText], { type: 'application/json' });
+                                const newFile = new File([blob], file.name, { type: 'application/json' });
+                                const dataTransfer = new DataTransfer();
+                                dataTransfer.items.add(newFile);
+                                document.getElementById('importFile').files = dataTransfer.files;
+                                handleImport({ target: document.getElementById('importFile') });
+                                continue;
+                            }
+                        }
+                        text = JSON.stringify(jsonData, null, 2);
+                    } catch (e) {
+                        text = jsonText;
                     }
+                } else if (fileName.endsWith('.doc') || fileName.endsWith('.docx')) {
+                    // Word documents require special handling and are not supported
+                    failedFiles.push({ 
+                        name: file.name, 
+                        reason: 'Word documents (.doc/.docx) are not supported. Please save as .txt or .pdf first.' 
+                    });
+                    continue;
+                } else {
+                    throw new Error('Unsupported file format');
                 }
-                // Otherwise, use as pretty-printed JSON text
-                text = JSON.stringify(jsonData, null, 2);
-            } catch (e) {
-                // If not valid JSON, use raw text
-                text = jsonText;
+
+                if (text.trim()) {
+                    // Add proper spacing between files
+                    if (allText.length > 0) {
+                        allText.push(`\n\n=== Content from: ${file.name} ===\n\n${text}`);
+                    } else {
+                        allText.push(`=== Content from: ${file.name} ===\n\n${text}`);
+                    }
+                    processedFiles.push(file.name);
+                } else {
+                    failedFiles.push({ name: file.name, reason: 'No text content extracted' });
+                }
+            } catch (error) {
+                failedFiles.push({ name: file.name, reason: error.message });
             }
-        } else if (fileName.endsWith('.doc') || fileName.endsWith('.docx')) {
-            // For Word documents, we'll extract what we can
-            showStatus('⚠️ Word document support is limited. For best results, please save as TXT or PDF first.', 'info');
-            text = await readTextFile(file);
-        } else {
-            throw new Error('Unsupported file format. Please use TXT, PDF, JSON, MD, or Word files.');
         }
 
-        if (text.trim()) {
-            document.getElementById('sourceText').value = text;
-            fileNameDisplay.textContent = `✓ Loaded: ${file.name}`;
-            showStatus(`✅ Successfully loaded content from ${file.name}`, 'success');
+        // Combine all text
+        if (allText.length > 0) {
+            const currentText = document.getElementById('sourceText').value.trim();
+            const newContent = allText.join('');
+            const combinedText = currentText ? currentText + '\n\n' + newContent : newContent;
+            document.getElementById('sourceText').value = combinedText;
+            
+            let statusMsg = `✅ Successfully loaded ${processedFiles.length} file(s): ${processedFiles.join(', ')}`;
+            if (failedFiles.length > 0) {
+                statusMsg += `\n⚠️ Failed to load ${failedFiles.length} file(s): ${failedFiles.map(f => `${f.name} (${f.reason})`).join(', ')}`;
+            }
+            
+            fileNameDisplay.textContent = `✓ Loaded ${processedFiles.length} of ${files.length} file(s)`;
+            showStatus(statusMsg, failedFiles.length > 0 ? 'info' : 'success');
         } else {
-            throw new Error('No text content could be extracted from the file.');
+            throw new Error('No text content could be extracted from any of the files.');
         }
     } catch (error) {
-        fileNameDisplay.textContent = `✗ Failed to load: ${file.name}`;
-        showStatus(`❌ Error loading file: ${error.message}`, 'error');
+        fileNameDisplay.textContent = `✗ Failed to load files`;
+        showStatus(`❌ Error loading files: ${error.message}`, 'error');
         console.error('File upload error:', error);
     } finally {
         setLoading(false);
-        // Reset file input
         event.target.value = '';
     }
+}
+
+// Clear source text
+function clearSourceText() {
+    document.getElementById('sourceText').value = '';
+    document.getElementById('fileNameDisplay').textContent = '';
+    showStatus('Source text cleared', 'info');
 }
 
 // Read text file
@@ -732,19 +889,30 @@ async function readPdfFile(file) {
         throw new Error('PDF library not loaded. Please refresh the page and try again.');
     }
 
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    
-    let fullText = '';
-    
-    // Extract text from each page
-    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-        const page = await pdf.getPage(pageNum);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items.map(item => item.str).join(' ');
-        fullText += pageText + '\n\n';
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        
+        let fullText = '';
+        
+        // Extract text from each page
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            const page = await pdf.getPage(pageNum);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map(item => item.str).join(' ');
+            fullText += pageText + '\n\n';
+        }
+        
+        if (!fullText.trim()) {
+            throw new Error('PDF appears to be empty or contains only images/scanned content.');
+        }
+        
+        return fullText.trim();
+    } catch (error) {
+        if (error.message && error.message.includes('Invalid PDF')) {
+            throw new Error('Invalid or corrupted PDF file.');
+        }
+        throw error;
     }
-    
-    return fullText.trim();
 }
 

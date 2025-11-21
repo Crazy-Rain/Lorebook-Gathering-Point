@@ -366,12 +366,13 @@
                     <label for="sourceText">Source Text/Information:</label>
                     <textarea id="sourceText" placeholder="Paste your character description, world lore, or any information you want to convert into lorebook entries..."></textarea>
                     <p class="help-text">Paste the text you want to process into lorebook entries. The AI will extract key information and create structured entries.</p>
-                    <div style="margin-top: 10px;">
+                    <div style="margin-top: 10px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                         <button class="btn btn-secondary" onclick="browseSourceFile()">📁 Browse Files</button>
-                        <input type="file" id="sourceFileInput" style="display: none;" accept=".txt,.pdf,.json,.doc,.docx,.md" onchange="handleSourceFileUpload(event)">
-                        <span id="fileNameDisplay" style="margin-left: 10px; color: #666; font-style: italic;"></span>
+                        <button class="btn btn-secondary" onclick="clearSourceText()">🗑️ Clear Text</button>
+                        <input type="file" id="sourceFileInput" style="display: none;" accept=".txt,.pdf,.json,.md" multiple onchange="handleSourceFileUpload(event)">
+                        <span id="fileNameDisplay" style="color: #666; font-style: italic;"></span>
                     </div>
-                    <p class="help-text" style="margin-top: 5px;">Supported formats: TXT, PDF, JSON, Word (.doc/.docx), Markdown (.md)</p>
+                    <p class="help-text" style="margin-top: 5px;">Supported formats: TXT, PDF, JSON, Markdown (.md)</p>
                 </div>
                 <div class="form-group">
                     <label for="processingPrompt">Processing Instructions (Optional):</label>
@@ -386,6 +387,20 @@ Source text:</textarea>
                     <p class="help-text">Customize how the AI processes your text. Default prompt extracts information without censorship.</p>
                 </div>
                 <button class="btn btn-primary" onclick="generateEntries()">🤖 Generate Entries with AI</button>
+            </div>
+
+            <!-- AI Response Review Section -->
+            <div class="section" id="aiResponseSection" style="display: none;">
+                <h2>🔍 Review AI Response</h2>
+                <div class="form-group">
+                    <label for="aiResponse">AI Generated Content (Editable):</label>
+                    <textarea id="aiResponse" placeholder="AI response will appear here. You can review and edit before converting to lorebook entries..."></textarea>
+                    <p class="help-text">Review and modify the AI-generated JSON response as needed. The response should be a JSON array of objects with 'keys' and 'content' fields.</p>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-success" onclick="convertToEntries()">✅ Convert to Lorebook Entries</button>
+                    <button class="btn btn-secondary" onclick="clearAiResponse()">🗑️ Clear Response</button>
+                </div>
             </div>
 
             <!-- Manual Entry Section -->
