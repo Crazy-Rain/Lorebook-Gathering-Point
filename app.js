@@ -319,9 +319,10 @@ async function generateEntries() {
         
         // Try to extract JSON from the response with improved handling
         let jsonContent;
+        let parsedContent;
         try {
             // Try direct parsing first
-            JSON.parse(content);
+            parsedContent = JSON.parse(content);
             jsonContent = content;
         } catch (e) {
             // Try to extract JSON from markdown code blocks
@@ -332,27 +333,23 @@ async function generateEntries() {
                 // Try to find any JSON array in the text
                 const jsonArrayMatch = content.match(/\[[\s\S]*?\]/);
                 if (jsonArrayMatch) {
-                    try {
-                        // Validate it's actually parseable
-                        JSON.parse(jsonArrayMatch[0]);
-                        jsonContent = jsonArrayMatch[0];
-                    } catch (parseError) {
-                        throw new Error('Could not extract valid JSON from API response. Please check the processing instructions or try again.');
-                    }
+                    jsonContent = jsonArrayMatch[0];
                 } else {
                     throw new Error('No JSON array found in API response. Please ensure your processing instructions ask for JSON output.');
                 }
             }
+            
+            // Parse the extracted content
+            try {
+                parsedContent = JSON.parse(jsonContent);
+            } catch (parseError) {
+                throw new Error('Could not extract valid JSON from API response. Please check the processing instructions or try again.');
+            }
         }
 
-        // Validate the extracted JSON is an array
-        try {
-            const testParse = JSON.parse(jsonContent);
-            if (!Array.isArray(testParse)) {
-                throw new Error('Extracted content is valid JSON but not an array of entries.');
-            }
-        } catch (e) {
-            throw new Error(`Invalid JSON format: ${e.message}`);
+        // Validate the parsed content is an array
+        if (!Array.isArray(parsedContent)) {
+            throw new Error('Extracted content is valid JSON but not an array of entries.');
         }
 
         // Display the AI response in the review text box
@@ -799,7 +796,8 @@ async function handleSourceFileUpload(event) {
         // Combine all text
         if (allText.length > 0) {
             const currentText = document.getElementById('sourceText').value.trim();
-            const combinedText = currentText ? currentText + allText.join('') : allText.join('').trim();
+            const newContent = allText.join('');
+            const combinedText = currentText ? currentText + newContent : newContent.trim();
             document.getElementById('sourceText').value = combinedText;
             
             let statusMsg = `✅ Successfully loaded ${processedFiles.length} file(s): ${processedFiles.join(', ')}`;
